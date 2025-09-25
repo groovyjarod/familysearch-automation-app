@@ -1,0 +1,24 @@
+{
+  "accessibilityScore": 88,
+  "html-has-lang-1": {
+    "title": "`<html>` element does not have a `[lang]` attribute",
+    "description": "If a page doesn't specify a `lang` attribute, a screen reader assumes that the page is in the default language that the user chose when setting up the screen reader. If the page isn't actually in the default language, then the screen reader might not announce the page's text correctly. [Learn more about the `lang` attribute](https://dequeuniversity.com/rules/axe/4.10/html-has-lang).",
+    "items": [
+      {
+        "snippet": "<html>",
+        "selector": "html",
+        "explanation": "Fix any of the following:\n  The <html> element does not have a lang attribute",
+        "boundingRect": {
+          "top": 0,
+          "bottom": 406,
+          "left": 0,
+          "right": 1920,
+          "width": 1920,
+          "height": 406
+        },
+        "itemCategory": "unknown"
+      }
+    ]
+  },
+  "number-of-Items": 1
+}
