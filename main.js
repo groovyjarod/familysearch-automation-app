@@ -21,7 +21,7 @@ console.log('Update feed URL:', autoUpdater.getFeedURL())
 autoUpdater.setFeedURL({
   provider:"github",
   owner: "groovyjarod",
-  repo: "lighthouse-desktop-app",
+  repo: "familysearch-automation-app",
   releaseType: "release"
 })
 

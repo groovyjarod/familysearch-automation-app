@@ -1,11 +1,11 @@
 {
-  "name": "Lighthouse-Automation-App",
+  "name": "FamilySearch-Automation-App",
   "version": "1.1.1",
   "description": "A react-based automation tool using Electron to emulate, React to render, and javascript to process logic.",
   "main": "main.js",
   "author": "SolutionStream",
   "license": "MIT",
-  "homepage": "https://github.com/groovyjarod/lighthouse-desktop-app",
+  "homepage": "https://github.com/groovyjarod/familysearch-automation-app",
   "scripts": {
     "electron:start": "electron .",
     "dev": "concurrently \"vite\" \"npm run electron:start\"",
@@ -148,7 +148,7 @@
       {
         "provider": "github",
         "owner": "groovyjarod",
-        "repo": "lighthouse-desktop-app",
+        "repo": "familysearch-automation-app",
         "releaseType": "release"
       }
     ]
