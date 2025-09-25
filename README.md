@@ -1,14 +1,26 @@
-Version 0.9.3
-Created by Jarod Day
+Version 1.0.3
+Created by SolutionStream for FamilySearch
 
-This is a GUI-based desktop application designed to accomplish the tasks of the Lighthouse Automation Command Line Application, <a href="https://github.com/groovyjarod/lighthouse-automation/">which can be found here</a>. A chrome extension exists alongside this app to visualize accessibility audits and where they were generated, which can be found <a href="https://github.com/groovyjarod/Audit-Extension">here</a>. It is recommended to use this extension tool alongside this app in order to get the most out of Google's Lighthouse Auditing feature. 
+The Lighthouse Automation App is a GUI-based application running on Electron, whose UI is created with React.js, and uses javascript packages such as Puppeteer, Lighthouse, glob, and p-limit, among others. This application aids in conducting Lighthouse Audits under a variety of different methods, such as accessibility, and streamlines audits to occur automatically and concurrently, in order to accomplish auditing all pages with minimal clicks. This app's flexible and customizable approach allows for conducting as many audits as possible with the minimal required effort, allowing potentially entire websites to be audited in one process.
 
-To get a full synopsis of the logic being performed in this application, <a href="https://github.com/groovyjarod/lighthouse-automation/blob/main/README.md">read the Lighthouse Automation Readme here</a>.
+App features:
 
-A brief overview of the features of this app:
+This application uses Google Chrome's Puppeteer feature to launch an instance of chrome for the url to a website, either inputted by the user, or streamlined through a series of urls provided by the user. Lighthouse will then use Puppeteer to conduct a Lighthouse Audit, scanning the page for things done correctly/incorrectly, and then write a .json file to the computer to be viewed by the user.
 
-This app is designed to comprehensively and simply generate lighthouse automation reports in a GUI-based fashion, making the process of generating lighthouse reports doable for people of all backgrounds of technology. Reports are categorized in a customizable way that enables the user to easily and readily locate files and use them in other applications, such as the <a href="https://github.com/groovyjarod/Audit-Extension>audit extension tool</a>.
+This .json file will contain information pertaining to the user's type of audit conducted, to give feedback on the webpage's features, first by providing a score for the user, and then a list of items within the page that are unideal and therefore require checking by the user.
 
-Mass-auditing webpages:
- A central feature of this app is the ability to automate a large number of audits at a concurrency of the user's choice, for a website of many pages. This app will determine the number of recommended simultaneous audits based on the user's computer's capabilities, and the user will choose how many. A series of audits will then conduct based on the initial URL given by the user and a .txt file that can be uploaded, which will be looped through to visit each of the website's paths provided by the .txt file.
- All audits are stored in an organized folder, which can be used to view, cross-reference other audits, and gain insights into each page's problems.
+Each of these .json files are categorized by the way they were generated into one of three folders: Custom Audits, Concurrent Audits, and Old Audits. The Custom Audits folder contains all audits completed individually through the application's 'Test One' feature. The Concurrent Audits folder (labeled as just 'Audits') contains all audits most recently completed by the application's 'Test All' feature. Then, the Old Audits folder contains all concurrent audits that have been pushed to the Old Audits folder by the user, to be compared/contrasted, or viewed at the user's leisure.
+
+The application contains a feature to seamlessly transfer all audits from the Concurrent Audits folder to the Old Audits folder, to allow for customizability.
+
+The application's settings feature is included in the main menu as 'View/Change Files'. Included in this page is the following:
+
+Change Initial URL - this is the base URL that will be used to conduct concurrent audits. All paths within the 'Change Paths' text box will be sequentially used to individually combine with the base URL to conduct concurrent audits.
+
+Change Paths - this is a list of url paths, relative to the base URL, to conduct concurrent audits.
+
+Change Access Key - this is the user's Secret Agent Key, which functions to enable the user to access websites that would otherwise be blocked by firewalls and systems alike within a website's security features. Many websites take measures to prevent bots from skimming their sites, and Puppeteer, combined with Lighthouse, often is recognized as a bot from many websites, making the Secret Agent Key necessary for being able to bypass their security features and access the site. You will need to contact an administrator of the site you're looking to audit in order to get a Secret Agent Key generated specific to your computer's IP address.
+
+Installation instructions:
+
+These will be provided at a later date. Stay tuned for updates on how to implement it yourself.
