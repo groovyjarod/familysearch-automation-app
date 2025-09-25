@@ -1,4 +1,4 @@
-Version 1.0.3
+Version 1.1.3
 Created by SolutionStream for FamilySearch
 
 The Lighthouse Automation App is a GUI-based application running on Electron, whose UI is created with React.js, and uses javascript packages such as Puppeteer, Lighthouse, glob, and p-limit, among others. This application aids in conducting Lighthouse Audits under a variety of different methods, such as accessibility, and streamlines audits to occur automatically and concurrently, in order to accomplish auditing all pages with minimal clicks. This app's flexible and customizable approach allows for conducting as many audits as possible with the minimal required effort, allowing potentially entire websites to be audited in one process.
