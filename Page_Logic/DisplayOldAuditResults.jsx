@@ -25,7 +25,7 @@ const DisplayOldAuditResults = () => {
   }, []);
   return (
     <VStack {...CenteredVstackCss}>
-      <h2>Old Audit Results Contents</h2>
+      <h2>Old Audit Results</h2>
       <HStack width="95%" justifyContent="space-between">
         <h3>Name</h3>
         <HStack minW="50%" width="50%" justifyContent="space-between">
