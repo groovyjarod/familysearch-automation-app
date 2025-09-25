@@ -26,7 +26,7 @@ const DisplayAuditResults = () => {
 
   return (
     <VStack {...CenteredVstackCss}>
-      <h2>Concurrent Audit Results</h2>
+      <h2>Listed Audit Results</h2>
       <HStack width="95%" justifyContent="space-between" position="sticky" top="0px">
         <h3>Name</h3>
         <HStack minW="50%" width="50%" justifyContent="space-between">
