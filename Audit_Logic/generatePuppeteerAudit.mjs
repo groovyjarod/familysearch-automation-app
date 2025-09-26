@@ -17,7 +17,7 @@ export default async function generatePuppeteerAudit(
   const isMobile = TESTING_METHOD === "mobile";
   const USER_AGENT = isUsingUserAgent === "yes" ? user_agent : "The user has indicated they do not want to use a User Agent Key for this run.";
   const LOADING_TIME = parseInt(loadingTime) * 1000; // timeout timer in milliseconds
-  const LIGHTHOUSE_TIMEOUT = 60000;
+  // const LIGHTHOUSE_TIMEOUT = 60000;
   const viewport = { width: parseInt(viewportWidth), height: 800 }
   const EXPLICIT_PORT = 9222 + Math.floor(Math.random() * 1000)
 
@@ -38,8 +38,8 @@ export default async function generatePuppeteerAudit(
   })
 
   let puppeteerArgs = [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
     `--remote-debugging-port=${EXPLICIT_PORT}`,
     '--remote-allow-origins=*',
     '--disable-dev-shm-usage'
