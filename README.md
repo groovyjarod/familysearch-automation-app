@@ -47,5 +47,16 @@ electron builder --win --publish=always
 
 If the following is properly completed, the compiling and creation of a new application will commmence, and you'll receive a build and dist folder. Build will contain the necessary files to run the app independently, and dist will contain the .exe or .dmg files, according to whichever operating system you're running the release for. Most of the time it should be just windows, but there may be mac users using it too.
 
-File contents:
+Folder contents:
 
+Audit_Logic - contains .mjs files that handle the logic for running tests, processing results, and creating viewable json files containing the results of tests.
+
+Audits - contains folders where finished audits will be placed.
+
+Page_Logic - contains .jsx files that handle the logic for viewing finished .json files.
+
+Pages - contains .jsx files that render the UI for each page on the application.
+- AuditOne.jsx contains UI and logic for rendering each type of possible test.
+- AuditAll.jsx contains UI and logic for rendering each type of concurrent possible test.
+
+Reusables - Contains css code, react components, and other javascript files that are used throughout the code.
