@@ -58,6 +58,10 @@ const ReadyScreen = memo(({
       <h1>{recommendedAudits}.</h1>
       <Text>How many tests would you like to run concurrently?</Text>
       <NumberInput valueVariable={testingMethod === 'all' ? 1 : inputNumber} setValueVariable={setInputNumber} disabled={testingMethod === 'all'} />
+      <Text maxW="80%" fontWeight='650' fontStyle='italic'>
+        Note: Audits per each url path may fail at a higher rate if this is the first session of running audits.<br/>
+        If the result shows that audits failed during the run, it is recommended to first reduce the concurrency number for audits, then increase the concurrency number once audits start passing.
+      </Text>
       <h2>Choose Testing Method</h2>
       <p>Choose which format the page will load to accommodate your auditing needs. All Sizes will render 4 instances of the webpage with 4 different width sizes.</p>
       <HStack {...CenteredHstackCss}>
@@ -261,6 +265,7 @@ const AuditAll = () => {
     const numberOfConcurrentAudits = pLimit(parseInt(inputNumber) || 1);
     setRunningStatus("running");
     setIsCancelled(false)
+    window.scrollTo(0, 0)
     const tasks = wikiPaths.map((wikiPath, index) => {
       const fullUrl = `${initialUrl}${wikiPath}`;
       const outputType = testingMethod === "desktop" ? "desk" : "mobile";
@@ -359,6 +364,13 @@ const AuditAll = () => {
           <p>{audit}</p>
         </VStack>
       ))}
+      {failedAudits.length > 0 && (
+        <Text maxW='80%' fontWeight='650' fontStyle='italic'>
+          To reduce fail rates of these audits, consider decreasing the concurrency number, 
+          increasing the timeout timer, and check your paths to ensure they match the 
+          correct url.
+        </Text>
+      )}
       <button className="btn btn-main" onClick={() => handleReset()}>
         Run Again
       </button>

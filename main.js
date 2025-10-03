@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { autoUpdater } = require("electron-updater")
 const fs = require("fs");
 const fsPromise = require("fs").promises;
@@ -42,8 +42,18 @@ autoUpdater.on('update-not-available', () => {
 
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded:', info.version)
-  BrowserWindow.getAllWindows()[0].webContents.send('update-downloaded', info)
-  autoUpdater.quitAndInstall()
+
+  const mainWindow = BrowserWindow.getAllWindows()[0]
+  if (mainWindow) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Ready',
+      message: `Version ${info.version} is downloaded and ready to install. Do you want to restart now to install?`,
+      buttons: ['Restart Now', 'Later']
+    }).then(result => {
+      if (result.response === 0) autoUpdater.quitAndInstall()
+    })
+  }
 })
 
 autoUpdater.on('error', (err) => {
