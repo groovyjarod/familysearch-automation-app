@@ -56,4 +56,4 @@ contextBridge.exposeInMainWorld("electronAPI", {
 });
 
 console.log("preload script loaded.");
-console.log(`Executable path: ${process.env.PUPPETEER_EXECUTABLE_PATH}`)
+// console.log(`Executable path: ${process.env.PUPPETEER_EXECUTABLE_PATH}`)
