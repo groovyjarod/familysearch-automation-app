@@ -242,6 +242,8 @@ ipcMain.handle("get-file", async (event, filePath) => {
   return await fsPromise.readFile(basePath, "utf8")
 });
 
+ipcMain.handle("get-version", async () => app.getVersion())
+
 ipcMain.handle("get-all-sized-audit", async (event, filePath) => {
   const basePath = isDev
     ? path.join(__dirname, "audits", filePath)

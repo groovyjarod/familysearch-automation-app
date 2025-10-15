@@ -1,5 +1,5 @@
 FamilySearch Automation Application
-Version 1.2.0
+Version 1.2.1
 Created by SolutionStream for FamilySearch
 
 The Lighthouse Automation App is a GUI-based application running on Electron, whose UI is created with React.js, and uses javascript packages such as Puppeteer, Lighthouse, glob, and p-limit, among others. This application aids in conducting Lighthouse Audits under a variety of different methods, such as accessibility, and streamlines audits to occur automatically and concurrently, in order to accomplish auditing all pages with minimal manual user input. This app's flexible and customizable approach allows for conducting as many audits as possible with the minimal required effort, allowing potentially entire websites to be audited in one process.
@@ -51,7 +51,7 @@ Folder contents:
 
 Audit_Logic - contains .mjs files that handle the logic for running tests, processing results, and creating viewable json files containing the results of tests.
 
-Audits - contains folders where finished audits will be placed.
+Audits - contains folders where finished audits will be placed. In production, your .exe/.dmg application will create a folder named 'audits', which will be placed in your computer's 'Documents' folder, and all tests will be saved there.
 
 Page_Logic - contains .jsx files that handle the logic for viewing finished .json files.
 
@@ -60,3 +60,26 @@ Pages - contains .jsx files that render the UI for each page on the application.
 - AuditAll.jsx contains UI and logic for rendering each type of concurrent possible test.
 
 Reusables - Contains css code, react components, and other javascript files that are used throughout the code.
+
+Settings - contains .txt files which are overwritten in the settings menu of the application. These .txt files contain the used url, secret agent key for Inverna blockers, and the list of url paths that will be combined with the url to conduct concurrent audits.
+
+Src - Contains App.jsx and main.jsx, which handle the application's rendering. Also contains styles.css, which contains the majority of the custom css logic apart from ChakraUI.
+
+Visualizing an audit through the code:
+
+The code handling the logic for audits can be found within AuditOne.jsx and AuditAll.jsx. The following is a guide on where the data flows through the code in order to conduct an audit and create a .json file:
+- AuditOne/AuditAll: The audit-calling .jsx files invoke Electron's API, which has a series of API calls and functions written in main.js. These api calls are instantiated in preload.js, where they're accessible and therefore used throughout the application's code.
+- Main.js: From the audit-calling .jsx files, electronAPI.get-spawn is called. This uses the library, child_process's 'spawn' feature to create an environment for Puppeteer and Lighthouse to run in.
+  - Concurrent audits will create multiple instances of child_process.spawn.
+  - In the spawn code, runAndWriteAudit.mjs is invoked.
+  - All messages are either logged or stored in a variable that is viewable upon a test's failure.
+- runAndWriteAudit: takes all arguments and commences getReportData.mjs to asynchronously handle all of the audit-creating logic.
+- GetReportData: calls generatePuppeteerAudit.mjs and asynchronously, one after the other, processes the newly created .json file to contain just what is needed for an accessibility audit.
+- GeneratePuppeteerAudit: readies the child_process.spawn instance to launch puppeteer, navigate to the given url, and then open Lighthouse to conduct an audit.
+  - the majority of error-handling console messages are contained here. If they are commented out, you may uncomment them to be able to debug more fully to identify issues with the code should it not work.
+
+Following all of this, an audit will be generated, processed, and stored in either 'Listed Audits' or 'Custom Audits'.
+
+Audits are viewable in the 'Folders' section of the app.
+
+You may transfer audits from 'Listed Audits' to 'Old Audits' by clicking the 'Transfer Audits' button in the audits menu.

@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
       isViewingAudit,
       loadingTime
     ),
+    getVersion: () => ipcRenderer.invoke("get-version"),
     getWikiPathsData: () => ipcRenderer.invoke("get-wiki-paths"),
   getOldAudits: () => ipcRenderer.invoke("read-old-audit-folder"),
   moveAuditFiles: () => ipcRenderer.invoke("move-audit-files"),
