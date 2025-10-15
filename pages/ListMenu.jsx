@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { VStack, HStack } from '@chakra-ui/react'
 import CenteredHstackCss from '../reusables/CenteredHstackCss'
 import CenteredVstackCss from '../reusables/CenteredVstackCss'
@@ -6,9 +6,13 @@ import MenuHeader from '../reusables/MenuHeader'
 import LinkButton from '../reusables/LinkButton'
 
 const ListMenu = () => {
+  const [version, setVersion] = useState('')
+  useEffect(() => {
+    window.electronAPI.getVersion().then(setVersion)
+  }, [])
   return (
     <VStack {...CenteredVstackCss}>
-        <MenuHeader title="View Audit Folders" subTitle="Created for FamilySearch" />
+        <MenuHeader title="View Audit Folders" subTitle={`Version ${version}`} />
         <div className="page-spacer"></div>
         <h2>Choose a folder to view your Audits:</h2>
         <HStack {...CenteredHstackCss}>

@@ -1,14 +1,18 @@
-import React from 'react'
-import { VStack, HStack, Menu } from '@chakra-ui/react'
+import React, { useState, useEffect } from 'react'
+import { VStack, HStack } from '@chakra-ui/react'
 import CenteredVstackCss from '../reusables/CenteredVstackCss'
 import CenteredHstackCss from '../reusables/CenteredHstackCss'
 import MenuHeader from '../reusables/MenuHeader'
 import LinkButton from '../reusables/LinkButton'
 
 const AuditMenu = () => {
+  const [version, setVersion] = useState('')
+  useEffect(() => {
+    window.electronAPI.getVersion().then(setVersion)
+  }, [])
   return (
     <VStack {...CenteredVstackCss}>
-      <MenuHeader title="Conduct an Audit" subTitle="Version 1.2.1" headerText="Choose from the options below which type of audit you would like to conduct." />
+      <MenuHeader title="Conduct an Audit" subTitle={`Version ${version}`} headerText="Choose from the options below which type of audit you would like to conduct." />
       <div className="page-spacer"></div>
       <h2>Audit Options</h2>
       <HStack {...CenteredHstackCss}>

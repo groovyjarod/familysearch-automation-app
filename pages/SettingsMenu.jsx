@@ -10,7 +10,7 @@ const SettingsMenu = () => {
   const [wikiPaths, setWikiPaths] = useState([])
   const [userKey, setUserKey] = useState('')
   const [initialUrl, setInitialUrl] = useState('')
-
+  const [version, setVersion] = useState('')
   const [wikiButtonText, setWikiButtonText] = useState('Save Changes')
   const [urlButtonText, setUrlButtonText] = useState('Save Changes')
   const [keyButtonText, setKeyButtonText] = useState('Save Changes')
@@ -24,6 +24,7 @@ const SettingsMenu = () => {
   }
 
   useEffect(() => {
+    window.electronAPI.getVersion().then(setVersion)
     window.electronAPI.getWikiPathsData().then(setWikiPaths).catch(console.error)
     window.electronAPI.getFile('./settings/secretUserAgent.txt').then(setUserKey).catch(console.error)
     window.electronAPI.getFile('./settings/initialUrl.txt').then(setInitialUrl).catch(console.error)
@@ -31,7 +32,7 @@ const SettingsMenu = () => {
 
   return (
     <VStack {...CenteredVstackCss}>
-        <MenuHeader title="Settings" subTitle="Version 1.2.1" />
+        <MenuHeader title="Settings" subTitle={`Version ${version}`} />
         <HStack {...CenteredHstackCss}>
           <VStack {...BodyVstackCss}>
             <h2>Change Paths</h2>
