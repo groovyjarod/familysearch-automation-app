@@ -11,6 +11,7 @@ import ListAudits from "../pages/ListAudits"
 import ListOldAudits from "../pages/ListOldAudits";
 import ListCustomAudits from "../pages/ListCustomAudits";
 import SettingsMenu from "../pages/SettingsMenu";
+import ExtensionInfo from "../pages/ExtensionInfo";
 
 const App = () => {
   return (
@@ -30,6 +31,7 @@ const App = () => {
           <Route path="view-custom-audits" element={<ListCustomAudits />} />
         </Route>
         <Route path="files-menu" element={<SettingsMenu />} />
+        <Route path="extension-menu" element={<ExtensionInfo />} />
       </Routes>
     </HashRouter>
   );

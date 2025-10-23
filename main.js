@@ -226,6 +226,10 @@ ipcMain.handle('check-node', async () => {
   }
 })
 
+ipcMain.handle("open-chrome", async (event, url) => {
+  shell.openExternal(url)
+})
+
 ipcMain.handle("get-wiki-paths", async () => {
   const basePath = isDev
     ? path.join(__dirname, 'settings', 'wikiPaths.txt')
