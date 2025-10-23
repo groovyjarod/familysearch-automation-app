@@ -30,6 +30,11 @@ const Home = () => {
             buttonText="View/Change Files"
             buttonClass="btn btn-main btn-files"
           />
+          <LinkButton
+            destination="/extension-menu"
+            buttonText="Download Chrome Extension"
+            buttonClass="btn btn-extension btn-audit"
+          />
         </VStack>
       </VStack>
     </>

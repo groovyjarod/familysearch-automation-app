@@ -116,6 +116,11 @@ ul {
   width: 200px;
 }
 
+.btn-extension {
+  height: 48px;
+  width: 300px;
+}
+
 .btn-menu {
   height: 120px;
   width: 200px;
