@@ -14,7 +14,7 @@ const Home = () => {
         <h1>Lighthouse Automation Tool</h1>
         <h3>Version {version}</h3>
         <h2>Created for FamilySearch</h2>
-        <VStack width="100%" gap="16px">
+        <VStack width="100%" gap="12px">
           <LinkButton
             destination="/test-menu"
             buttonText="Run a Test"
@@ -32,7 +32,7 @@ const Home = () => {
           />
           <LinkButton
             destination="/extension-menu"
-            buttonText="Download Chrome Extension"
+            buttonText="Download Extension"
             buttonClass="btn btn-extension btn-audit"
           />
         </VStack>
