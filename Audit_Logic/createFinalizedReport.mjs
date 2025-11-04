@@ -15,11 +15,11 @@ async function getRawAuditData(urlPath, testing_method, user_agent, viewport, is
 }
 
 // retrieve json object and return object with relevant data
-async function getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime) {
+async function getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
     const [auditResults, accessibilityScore] = await getRawAuditData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
     if (accessibilityScore === 0) return [null, 0]
-    const trimmedData = trimAuditData(auditResults)
+    const trimmedData = trimAuditData(auditResults, isConcise)
     return [trimmedData, accessibilityScore];
   } catch (err) {
     console.error(`getAuditAccessibilityData: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);
@@ -28,9 +28,9 @@ async function getAuditAccessibilityData(urlPath, testing_method, user_agent, vi
 }
 
 // extract relevant data
-async function organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime) {
+async function organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
-    const [rawResultsData, accessibilityScore] = await getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
+    const [rawResultsData, accessibilityScore] = await getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
     if (accessibilityScore === 0) {
       console.log(`organizeData: accessibilityScore=0`);
       return { accessibilityScore: 0 };
@@ -48,8 +48,8 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
           selector: itemData.selector,
           explanation: itemData.explanation,
           boundingRect: itemData.boundingRect,
-          itemCategory: classifyIssue(itemData.selector, itemData.path || ''),
         };
+        if (isConcise === "no") newItem.itemCategory = classifyIssue(itemData.selector, itemData.path || '')
         if (itemData.subItems && itemData.subItems.items) {
           const newSubItems = itemData.subItems.items.map(subItem => ({
             snippet: subItem.relatedNode?.snippet,
@@ -74,11 +74,12 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
     return { accessibilityScore: 0 };
   }
 }
-
+// TODO: fix issue that prevents isConcise from going thru
 // default function that invokes all others
-export default async function createReport(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime) {
+export default async function createReport(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
+  console.log(`IN CREATE FINALIZED REPORT: ${isConcise}`)
   try {
-    const dataToWrite = await organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
+    const dataToWrite = await organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
     console.log(`createReport: Completed for ${urlPath}`);
     return dataToWrite;
   } catch (err) {

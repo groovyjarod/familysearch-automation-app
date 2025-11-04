@@ -6,7 +6,8 @@ const runAllTypesAudit = async (
   folderPath,
   isCancelled,
   setRunningStatus,
-  isUsingUserAgent
+  isUsingUserAgent,
+  isConcise
 ) => {
   if (isCancelled) {
     throw new Error("Audit cancelled by user");
@@ -67,7 +68,8 @@ const runAllTypesAudit = async (
             processId,
             isUsingUserAgent,
             isViewingAudit,
-            loadingTime
+            loadingTime,
+            isConcise
           );
           console.log(`get-spawn result for size ${size}`)
           if (typeof result === "string" && result.includes("Audit complete, report written successfully")) {

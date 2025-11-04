@@ -35,6 +35,8 @@ const ReadyScreen = memo(({
   setTestingMethod,
   isUsingUserAgent,
   setIsUsingUserAgent,
+  isConcise,
+  setIsConcise,
   loadingTime,
   setLoadingTime,
   commenceAllAudits,
@@ -58,7 +60,7 @@ const ReadyScreen = memo(({
       <h1>{recommendedAudits}.</h1>
       <Text>How many tests would you like to run concurrently?</Text>
       <NumberInput valueVariable={testingMethod === 'all' ? 1 : inputNumber} setValueVariable={setInputNumber} disabled={testingMethod === 'all'} />
-      <Text maxW="80%" fontWeight='650' fontStyle='italic'>
+      <Text maxW="80%" fontStyle='italic'>
         Note: Audits per each url path may fail at a higher rate if this is the first session of running audits.<br/>
         If the result shows that audits failed during the run, it is recommended to first reduce the concurrency number for audits, then increase the concurrency number once audits start passing.
       </Text>
@@ -123,9 +125,33 @@ const ReadyScreen = memo(({
             <label htmlFor="mobile">Don't Use Key</label>
           </HStack>
         </HStack>
-      <h2>Timeout for Tests?</h2>
+        <h2>Timeout for Tests?</h2>
       <p>Determine how many seconds each audit will be allotted to complete. Aim for about 15 to 25 seconds for best results.</p>
       <NumberInput valueVariable={loadingTime} setValueVariable={setLoadingTime} disabled={false} />
+        <h2>How detailed would you like your Report?</h2>
+        <p>You may choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
+        <HStack {...CenteredHstackCss}>
+          <HStack {...BodyHstackCss}>
+            <input
+              type="radio"
+              name="isConcise"
+              value="no"
+              checked={isConcise === "no"}
+              onChange={() => setIsConcise("no")}
+            />
+            <label htmlFor="desktop">Full JSON Report</label>
+          </HStack>
+          <HStack {...BodyHstackCss}>
+            <input
+              type="radio"
+              name="isConcise"
+              value="yes"
+              checked={isConcise === "yes"}
+              onChange={() => setIsConcise("yes")}
+            />
+            <label htmlFor="mobile">Concise JSON Report</label>
+          </HStack>
+        </HStack>
       <div className="page-spacer"></div>
       <button
         className="btn btn-main"
@@ -156,6 +182,7 @@ const AuditAll = () => {
   const [testingMethod, setTestingMethod] = useState("desktop");
   const [runningStatus, setRunningStatus] = useState("ready");
   const [isUsingUserAgent, setIsUsingUserAgent] = useState("yes");
+  const [isConcise, setIsConcise] = useState("no");
   const [activePaths, setActivePaths] = useState([]);
   const [successfulAudits, setSuccessfulAudits] = useState([]);
   const [failedAudits, setFailedAudits] = useState([]);
@@ -240,7 +267,8 @@ const AuditAll = () => {
             'audit-results',
             isCancelledRef.current,
             setRunningStatus,
-            isUsingUserAgent
+            isUsingUserAgent,
+            isConcise
           )
           console.log(result)
           setSuccessfulAudits((prev) => [...prev, fullUrl])
@@ -267,10 +295,10 @@ const AuditAll = () => {
     setIsCancelled(false)
     window.scrollTo(0, 0)
     const tasks = wikiPaths.map((wikiPath, index) => {
+      const conciseTag = isConcise === "yes" ? "concise" : "full"
       const fullUrl = `${initialUrl}${wikiPath}`;
-      const outputType = testingMethod === "desktop" ? "desk" : "mobile";
       const outputDirPath = 'audit-results'
-      const outputFilePath = `${index + 1}-${outputType}-${wikiPath}.json`;
+      const outputFilePath = `${index + 1}-${testingMethod}-${conciseTag}-${wikiPath}.json`;
       const processId = `audit-${Date.now()}-${index}`
       const isViewingAudit = "no";
       return numberOfConcurrentAudits(() =>
@@ -292,7 +320,8 @@ const AuditAll = () => {
               processId,
               isUsingUserAgent,
               isViewingAudit,
-              loadingTime
+              loadingTime,
+              isConcise
             );
             console.log(result)
             if (typeof result === "string" && result.includes("Audit complete, report written successfully")) {
@@ -400,7 +429,7 @@ const AuditAll = () => {
   const CancelledScreen = () => (
     <VStack {...BodyVstackCss}>
       <h3>Audits cancelled.</h3>
-      <h4>{errorMessage}</h4>
+      <h4 className="auditOne-finished">{errorMessage}</h4>
       <button className="btn btn-main" onClick={() => handleReset()}>Run Again</button>
     </VStack>
   )
@@ -426,6 +455,8 @@ const AuditAll = () => {
           setTestingMethod={setTestingMethod}
           isUsingUserAgent={isUsingUserAgent}
           setIsUsingUserAgent={setIsUsingUserAgent}
+          isConcise={isConcise}
+          setIsConcise={setIsConcise}
           loadingTime={loadingTime}
           setLoadingTime={setLoadingTime}
           commenceAllAudits={testingMethod === 'all' ? commenceEachAllTypeAudit : commenceAllAudits}

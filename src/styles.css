@@ -6,8 +6,8 @@ body {
   background-size: cover;
   font-family: "Inter", sans-serif;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #2d1b3f transparent;
+  /* scrollbar-width: thin; */
+  /* scrollbar-color: #2d1b3f transparent; */
 }
 
 body {
@@ -22,16 +22,17 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background-color: #121212;
   border: none;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #3fb950;
+  background-color: transparent;
   border: none;
   border-radius: 8px;
 }
@@ -223,4 +224,13 @@ ul {
 
 .page-spacer {
   min-height: 64px;
+}
+
+.auditOne-finished::-webkit-scrollbar:horizontal {
+  height: 0;
+  display: none;
+}
+
+.auditOne-finished {
+  -ms-text-overflow: ellipsis;
 }
