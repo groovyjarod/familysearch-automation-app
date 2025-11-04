@@ -428,18 +428,18 @@ ipcMain.handle("access-os-data", async () => {
   return concurrency;
 });
 
-ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath, testing_method, user_agent, viewport, processId, isUsingUserAgent, isViewingAudit, loadingTime) => {
-    const TIMEOUT_ALL_TESTS = 70000;
-    const TIMEOUT_SINGULAR_TEST = 45000;
-    let timeoutId;
+ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath, testing_method, user_agent, viewport, processId, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) => {
+  const TIMEOUT_ALL_TESTS = 70000;
+  const TIMEOUT_SINGULAR_TEST = 45000;
+  let timeoutId;
+  let output = "";
+  let errorOutput = "";
 
     const customOutputPath = isDev ? path.join(__dirname, 'audits', outputDirPath, outputFilePath) : path.join(app.getPath('documents'), "audits", outputDirPath, outputFilePath)
 
     const scriptPath = isDev
       ? path.join(__dirname, "runAndWriteAudit.mjs")
       : path.join(process.resourcesPath, 'app', "runAndWriteAudit.mjs")
-
-    // console.log(`Commencing test for ${urlPath}...`)
 
     const spawnPromise = new Promise((resolve, reject) => {
       const child = child_process.spawn(
@@ -453,7 +453,8 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
           viewport,
           isUsingUserAgent,
           isViewingAudit,
-          loadingTime
+          loadingTime,
+          isConcise
         ],
         {
           stdio: ["ignore", "pipe", "pipe"],
@@ -468,9 +469,6 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
       );
 
       activeProcesses.set(processId, child);
-
-      let output = "";
-      let errorOutput = "";
 
       child.stdout.on("data", (data) => {
         const log = data.toString()

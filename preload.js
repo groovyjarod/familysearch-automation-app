@@ -27,7 +27,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     processId,
     isUsingUserAgent,
     isViewingAudit,
-    loadingTime
+    loadingTime,
+    isConcise
   ) =>
     ipcRenderer.invoke(
       "get-spawn",
@@ -40,7 +41,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       processId,
       isUsingUserAgent,
       isViewingAudit,
-      loadingTime
+      loadingTime,
+      isConcise
     ),
     getVersion: () => ipcRenderer.invoke("get-version"),
     getWikiPathsData: () => ipcRenderer.invoke("get-wiki-paths"),

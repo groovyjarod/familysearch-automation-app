@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import createReport from './Audit_Logic/createFinalizedReport.mjs';
 
-const [,, url, outputFile, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime] = process.argv;
+const [,, url, outputFile, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise] = process.argv;
 
 if (!url || !outputFile) {
   console.error('Usage: node runAndWriteAudit.mjs <url> <outputFile> <testing_method> <user_agent> <viewport> <isUsingUserAgent> <isViewingAudit>');
@@ -10,9 +10,9 @@ if (!url || !outputFile) {
   process.exit(1);
 }
 
-async function getReportData(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime) {
+async function getReportData(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
-    const returnData = await createReport(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
+    const returnData = await createReport(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
     console.log(`getReportData: Result received, accessibilityScore=${returnData.accessibilityScore || 'none'}`);
     return returnData;
   } catch (err) {
@@ -23,7 +23,7 @@ async function getReportData(url, testing_method, user_agent, viewport, isUsingU
 
 async function main() {
   try {
-    const jsonData = await getReportData(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
+    const jsonData = await getReportData(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
     const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
     if (parsedData.accessibilityScore > 0) {
       console.log(`main: Writing report to ${outputFile}, accessibilityScore=${parsedData.accessibilityScore}`);

@@ -49,9 +49,11 @@ const ReadyScreen = memo(
     setIsViewingAudit,
     loadingTime,
     setLoadingTime,
+    isConcise,
+    setIsConcise,
     handleAudit,
     handleAllSizesAudit,
-    handleCheck
+    // handleCheck
   }) => {
     return (
       <VStack {...BodyVstackCss}>
@@ -118,7 +120,7 @@ const ReadyScreen = memo(
           </HStack>
         </HStack>
         <h2>Want To See The Audit Happen?</h2>
-        <p>Use for debugging purposes to verify that you successfully connected to the page.\n If you're conducting an all-sizes audit, you will not be able to view the page.</p>
+        <p>Use for debugging purposes to verify that you successfully connected to the page.<br/> If you're conducting an all-sizes audit, you will not be able to view the page.</p>
         <HStack {...CenteredHstackCss}>
           <HStack {...BodyHstackCss}>
             <input
@@ -146,6 +148,30 @@ const ReadyScreen = memo(
       <h2>Timeout for this Test?</h2>
       <p>Determine how many seconds each audit will be allotted to complete. Aim for about 15 to 25 seconds for best results.</p>
       <NumberInput valueVariable={loadingTime} setValueVariable={setLoadingTime} disabled={false} />
+      <h2>How detailed would you like your Report?</h2>
+      <p>You may choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
+      <HStack {...CenteredHstackCss}>
+        <HStack {...BodyHstackCss}>
+          <input
+            type="radio"
+            name="isConcise"
+            value="no"
+            checked={isConcise === "no"}
+            onChange={() => setIsConcise("no")}
+           />
+          <label htmlFor="desktop">Full JSON Report</label>
+        </HStack>
+        <HStack {...BodyHstackCss}>
+          <input
+            type="radio"
+             name="isConcise"
+            value="yes"
+            checked={isConcise === "yes"}
+            onChange={() => setIsConcise("yes")}
+          />
+          <label htmlFor="mobile">Concise JSON Report</label>
+        </HStack>
+      </HStack>
       <div className="page-spacer"></div>
         <button
           className="btn btn-main"
@@ -180,6 +206,7 @@ const AuditOne = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isUsingUserAgent, setIsUsingUserAgent] = useState("yes");
   const [isViewingAudit, setIsViewingAudit] = useState('yes');
+  const [isConcise, setIsConcise] = useState("no")
   const [loadingTime, setLoadingTime] = useState("15")
   const isCancelledRef = useRef(isCancelled)
 
@@ -254,7 +281,8 @@ const AuditOne = () => {
           'custom-audit-results',
           isCancelledRef.current,
           setRunningStatus,
-          isUsingUserAgent
+          isUsingUserAgent,
+          isConcise
         );
         console.log(`runAllTypesAudit result:`, result);
         if (typeof result === "string" && result.includes("Audit complete.")) {
@@ -288,10 +316,11 @@ const AuditOne = () => {
     setPathName(getLastPathSegment(fullUrl));
     setTitleHeader("Auditing...");
     try {
+      const conciseTag = isConcise === "yes" ? "concise" : "full"
       const outputDirPath = 'custom-audit-results'
-      const outputFilePath = `${testingMethod}-${getLastPathSegment(fullUrl)}.json`;
+      const outputFilePath = `${testingMethod}-${conciseTag}-${getLastPathSegment(fullUrl)}.json`;
       const processId = `${testingMethod}-${Date.now()}`;
-      // console.log(`Starting audit for ${fullUrl}, method: ${testingMethod}, output: ${outputPath}, isUsingUserAgent: ${isUsingUserAgent}, isViewingAudit: ${isViewingAudit}`);
+      console.log(`Starting audit for ${fullUrl}, ${isConcise}`);
       const result = await retryAudit(async () => {
         const result = await window.electronAPI.getSpawn(
           fullUrl,
@@ -303,7 +332,8 @@ const AuditOne = () => {
           processId,
           isUsingUserAgent,
           isViewingAudit,
-          loadingTime
+          loadingTime,
+          isConcise
         );
         console.log(`get-spawn result:`, result);
         console.log(typeof result)
@@ -393,11 +423,11 @@ const AuditOne = () => {
   const FinishedScreen = () => (
     <VStack {...BodyVstackCss}>
       <div>
-        <h2>
+        <h2 className="auditOne-finished">
           Completed {testingMethod} {testingMethod === "all" ? "sized " : ""}{" "}
           Audit for
         </h2>
-        <h3 style={{ maxWidth: "80%", overflow: "scroll" }}>{fullUrl}.</h3>
+        <h3 className="auditOne-finished">{fullUrl}.</h3>
       </div>
       <LinkButton
         destination="../../lists-menu/view-custom-audits"
@@ -437,8 +467,8 @@ const AuditOne = () => {
 
   const CancelledScreen = () => (
     <VStack {...BodyVstackCss}>
-      <h3 style={{ maxWidth: "100%", overflow: "scroll" }}>Audit Cancelled for {fullUrl}</h3>
-      <h4>{errorMessage}</h4>
+      <h3 className="auditOne-finished">Audit Cancelled for {fullUrl}</h3>
+      <h4 className="auditOne-finished">{errorMessage}</h4>
       <button className="btn btn-main" onClick={handleRunAgain}>
         Run Another Audit
       </button>
@@ -460,6 +490,8 @@ const AuditOne = () => {
           setIsViewingAudit={setIsViewingAudit}
           loadingTime={loadingTime}
           setLoadingTime={setLoadingTime}
+          isConcise={isConcise}
+          setIsConcise={setIsConcise}
           handleAudit={handleAudit}
           handleAllSizesAudit={handleAllSizesAudit}
           handleCheck={handleCheck}
