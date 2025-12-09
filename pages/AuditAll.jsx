@@ -102,7 +102,7 @@ const ReadyScreen = memo(({
         </HStack>
       </HStack>
       <h2>Using User Agent Key?</h2>
-        <p>Use this when auditing sites that use Inverna blockers. Only use for sites you're authorized to.</p>
+        <p>Grants access to sites that use Inverna blockers. Only use for sites you're authorized to.</p>
         <HStack {...CenteredHstackCss}>
           <HStack {...BodyHstackCss}>
             <input
@@ -129,7 +129,7 @@ const ReadyScreen = memo(({
       <p>Determine how many seconds each audit will be allotted to complete. Aim for about 15 to 25 seconds for best results.</p>
       <NumberInput valueVariable={loadingTime} setValueVariable={setLoadingTime} disabled={false} />
         <h2>How detailed would you like your Report?</h2>
-        <p>You may choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
+        <p>Choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
         <HStack {...CenteredHstackCss}>
           <HStack {...BodyHstackCss}>
             <input
@@ -250,7 +250,7 @@ const AuditAll = () => {
     setIsCancelled(false)
     const tasks = wikiPaths.map((wikiPath) => {
       const fullUrl = `${initialUrl}${wikiPath}`
-      window.scrollTo(0, 0)
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth'})
 
       return numberOfConcurrentAudits(async () => {
         if (isCancelledRef.current) {
@@ -293,7 +293,7 @@ const AuditAll = () => {
     const numberOfConcurrentAudits = pLimit(parseInt(inputNumber) || 1);
     setRunningStatus("running");
     setIsCancelled(false)
-    window.scrollTo(0, 0)
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
     const tasks = wikiPaths.map((wikiPath, index) => {
       const conciseTag = isConcise === "yes" ? "concise" : "full"
       const fullUrl = `${initialUrl}${wikiPath}`;
@@ -323,12 +323,10 @@ const AuditAll = () => {
               loadingTime,
               isConcise
             );
-            console.log(result)
-            if (typeof result === "string" && result.includes("Audit complete, report written successfully")) {
-              setSuccessfulAudits((prev) => [...prev, fullUrl])
-            } else if (typeof result === "string" && result.includes("Audit incomplete")) {
-              setFailedAudits((prev) => [...prev, fullUrl]);
-            } else if (typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)) {
+            if (result.includes("|||") ||
+              typeof result === "object" && result.accessibilityScore > 0 ||
+              typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)
+            ) {
               setSuccessfulAudits((prev) => [...prev, fullUrl])
             } else {
               setFailedAudits((prev) => [...prev, fullUrl]);

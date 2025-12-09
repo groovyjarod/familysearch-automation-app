@@ -9,6 +9,8 @@ import BodyHstackCss from "../reusables/BodyHstackCss";
 import pLimit from "p-limit";
 import getLastPathSegment from "../reusables/getLastPathSegment";
 import runAllTypesAudit from "../reusables/RunAllTypesAudit";
+import handleAuditResult from "../reusables/HandleAuditResult";
+import generateFinalResultMessage from "../reusables/generateFinalResultMessage";
 
 const UrlInput = memo(({ fullUrl, setFullUrl, className }) => (
   <Input
@@ -96,7 +98,7 @@ const ReadyScreen = memo(
           </HStack>
         </HStack>
         <h2>Using User Agent Key?</h2>
-        <p>Use this when auditing sites that use Inverna blockers. Only use for sites you're authorized to.</p>
+        <p>Grants access to sites that use Inverna blockers. Only use for sites you're authorized to.</p>
         <HStack {...CenteredHstackCss}>
           <HStack {...BodyHstackCss}>
             <input
@@ -149,7 +151,7 @@ const ReadyScreen = memo(
       <p>Determine how many seconds each audit will be allotted to complete. Aim for about 15 to 25 seconds for best results.</p>
       <NumberInput valueVariable={loadingTime} setValueVariable={setLoadingTime} disabled={false} />
       <h2>How detailed would you like your Report?</h2>
-      <p>You may choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
+      <p>Choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
       <HStack {...CenteredHstackCss}>
         <HStack {...BodyHstackCss}>
           <input
@@ -208,6 +210,7 @@ const AuditOne = () => {
   const [isViewingAudit, setIsViewingAudit] = useState('yes');
   const [isConcise, setIsConcise] = useState("no")
   const [loadingTime, setLoadingTime] = useState("15")
+  const [resultContents, setResultContents] = useState("")
   const isCancelledRef = useRef(isCancelled)
 
   useEffect(() => {
@@ -272,7 +275,7 @@ const AuditOne = () => {
     setPathName(getLastPathSegment(fullUrl));
     setIsCancelled(false);
     try {
-      const result = await retryAudit(async () => {
+      await retryAudit(async () => {
         const result = await runAllTypesAudit(
           fullUrl,
           userAgent,
@@ -285,16 +288,19 @@ const AuditOne = () => {
           isConcise
         );
         console.log(`runAllTypesAudit result:`, result);
-        if (typeof result === "string" && result.includes("Audit complete.")) {
-          return "Audit complete.";
+        if (result.includes("|||") ||
+        typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)
+        ) {
+          setResultContents(handleAuditResult(result))
+          return
         } else if (typeof result === "string" && result.includes("Audit incomplete.")) {
           throw new Error(`In AuditOne handleAllSizesAudit: Audit incomplete for all: ${result}`);
         } else if (typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)) {
-          return "Audit complete.";
+          setResultContents(handleAuditResult(result))
+          return
         }
         throw new Error(`In AuditOne handleAllSizesAudit: Audit failed for all: ${JSON.stringify(result)}`);
       });
-      console.log(`All sizes audit completed: ${result}`);
       setRunningStatus("finished");
       setTitleHeader("Finished Auditing All Sizes");
     } catch (err) {
@@ -320,8 +326,8 @@ const AuditOne = () => {
       const outputDirPath = 'custom-audit-results'
       const outputFilePath = `${testingMethod}-${conciseTag}-${getLastPathSegment(fullUrl)}.json`;
       const processId = `${testingMethod}-${Date.now()}`;
-      console.log(`Starting audit for ${fullUrl}, ${isConcise}`);
-      const result = await retryAudit(async () => {
+      // console.log(`Starting audit for ${fullUrl}, ${isConcise}`);
+      await retryAudit(async () => {
         const result = await window.electronAPI.getSpawn(
           fullUrl,
           outputDirPath,
@@ -335,19 +341,14 @@ const AuditOne = () => {
           loadingTime,
           isConcise
         );
-        console.log(`get-spawn result:`, result);
-        console.log(typeof result)
-        const resultCheck = result.includes("Audit complete, report written successfully");
-        if (resultCheck) {
-          return "Audit complete.";
+        if (result.includes("|||") || typeof result === "object" && result.accessibilityScore > 0) {
+          setResultContents(handleAuditResult(result))
+          return
         } else if (typeof result === "string" && result.includes("Audit incomplete.")) {
           throw new Error(`AuditOne handleAudit: Audit failed for ${testingMethod}: ${result}`);
-        } else if (typeof result === "object" && result.accessibilityScore > 0) {
-          return "Audit complete.";
         }
         throw new Error(`AuditOne handleAudit: Audit failed for ${testingMethod}: ${JSON.stringify(result)}`);
       });
-      console.log(`Audit completed: ${result}`);
       setRunningStatus("finished");
       setTitleHeader("Audit Result");
     } catch (err) {
@@ -429,14 +430,17 @@ const AuditOne = () => {
         </h2>
         <h3 className="auditOne-finished">{fullUrl}.</h3>
       </div>
-      <LinkButton
-        destination="../../lists-menu/view-custom-audits"
-        buttonText="Go To Audit File"
-        buttonClass="btn btn-main"
-      />
-      <button className="btn btn-main" onClick={handleRunAgain}>
-        Run Another Audit
-      </button>
+      <HStack {...BodyHstackCss}>
+        <LinkButton
+          destination="../../lists-menu/view-custom-audits"
+          buttonText="Go To Audit File"
+          buttonClass="btn btn-main"
+        />
+        <button className="btn btn-main" onClick={handleRunAgain}>
+          Run Another Audit
+        </button>
+      </HStack>
+      <span className="final-message">{generateFinalResultMessage(resultContents)}</span>
     </VStack>
   );
 

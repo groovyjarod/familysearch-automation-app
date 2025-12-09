@@ -13,7 +13,7 @@ if (!url || !outputFile) {
 async function getReportData(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
     const returnData = await createReport(url, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
-    console.log(`getReportData: Result received, accessibilityScore=${returnData.accessibilityScore || 'none'}`);
+    // console.log(`getReportData: Result received, accessibilityScore=${returnData.accessibilityScore || 'none'}`);
     return returnData;
   } catch (err) {
     console.error(`getReportData: Error for ${url}: ${err.message}, stack: ${err.stack}`);
@@ -31,7 +31,8 @@ async function main() {
       console.log(outputDir)
       await fs.mkdir(outputDir, { recursive: true });
       await fs.writeFile(outputFile, JSON.stringify(parsedData, null, 2), 'utf8');
-      console.log('main: Audit complete, report written successfully');
+      console.log('|||')
+      console.log(jsonData)
     } else {
       console.error(`main: Audit incomplete, accessibilityScore=${parsedData.accessibilityScore}, error=${parsedData.error || 'none'}`);
       console.log('main: Audit incomplete');

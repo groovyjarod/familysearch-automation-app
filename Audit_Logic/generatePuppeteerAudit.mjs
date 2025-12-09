@@ -29,9 +29,6 @@ export default async function generatePuppeteerAudit(
     throw new Error(`Chromium binary missing at ${executablePath}`)
   }
 
-  process.on('exit', (code) => {
-    console.log(`Process exiting with code ${code}`)
-  })
   process.on('unhandledRejection', (reason, promise) => {
     console.error('unhandled Rejection:', reason.mesage || reason)
     console.error('Promise:', promise)
