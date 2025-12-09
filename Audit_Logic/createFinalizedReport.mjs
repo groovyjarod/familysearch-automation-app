@@ -74,17 +74,14 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
     return { accessibilityScore: 0 };
   }
 }
-// TODO: fix issue that prevents isConcise from going thru
 // default function that invokes all others
 export default async function createReport(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
-  console.log(`IN CREATE FINALIZED REPORT: ${isConcise}`)
   try {
     const dataToWrite = await organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
     console.log(`createReport: Completed for ${urlPath}`);
     return dataToWrite;
   } catch (err) {
-    console.error(`createReport: Failed for ${urlPath}: ${err.message}`);
-    console.error(`createReport: Stack: ${err.stack}`);
+    console.error(`createReport: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);
     return { accessibilityScore: 0 };
   }
 }

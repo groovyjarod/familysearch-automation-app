@@ -1,7 +1,6 @@
 import extractRelevantItemData from "./extractItemData.mjs";
 
 export default function trimAuditData(jsonData, isConcise) {
-  console.log(`TRIMAUDITDATA: Is it concise?: ${isConcise}`)
   const data = JSON.parse(jsonData)
   const auditLocations = data.categories.accessibility.auditRefs
   const returnData = []
@@ -17,7 +16,6 @@ export default function trimAuditData(jsonData, isConcise) {
         description: audit.description,
         items: isConcise === "no" ? [...extractRelevantItemData(audit.details.items || [])] : []
     }
-    // if (isConcise === "no") auditData.items = [...extractRelevantItemData(audit.details.items || [])]
     returnData.push(auditData)
   });
 
