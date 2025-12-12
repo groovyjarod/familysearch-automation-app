@@ -155,7 +155,7 @@ const ReadyScreen = memo(({
       <div className="page-spacer"></div>
       <button
         className="btn btn-main"
-        onClick={commenceAllAudits}
+        onClick={() => commenceAllAudits(wikiPaths)}
         disabled={
           !wikiPaths.length ||
           !inputNumber ||
@@ -248,10 +248,11 @@ const AuditAll = () => {
     const numberOfConcurrentAudits = pLimit(1)
     setRunningStatus("running")
     setIsCancelled(false)
-    const tasks = wikiPaths.map((wikiPath) => {
+    const pathsToUse = failedAudits.length > 0 ? failedAudits : wikiPaths
+    setFailedAudits([])
+    const tasks = pathsToUse.map((wikiPath) => {
       const fullUrl = `${initialUrl}${wikiPath}`
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth'})
-
       return numberOfConcurrentAudits(async () => {
         if (isCancelledRef.current) {
           console.log(`commenceEachAllTypeAudit: isCancelled check worked.`)
@@ -289,12 +290,13 @@ const AuditAll = () => {
     if (!isCancelledRef.current) setRunningStatus("finished")
   }
 
-  const commenceAllAudits = async () => {
+  const commenceAllAudits = async (pathList) => {
     const numberOfConcurrentAudits = pLimit(parseInt(inputNumber) || 1);
     setRunningStatus("running");
     setIsCancelled(false)
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
-    const tasks = wikiPaths.map((wikiPath, index) => {
+    setFailedAudits([])
+    const tasks = pathList.map((wikiPath, index) => {
       const conciseTag = isConcise === "yes" ? "concise" : "full"
       const fullUrl = `${initialUrl}${wikiPath}`;
       const outputDirPath = 'audit-results'
@@ -357,6 +359,14 @@ const AuditAll = () => {
     setSuccessfulAudits([])
     setFailedAudits([])
     setRunningStatus("ready")
+    window.electronAPI.getWikiPathsData().then(setWikiPaths).catch(console.error);
+  }
+
+  const handleRunFailedTests = (commenceRerun) => {
+    const newAudits = []
+    for (const audit of failedAudits) newAudits.push(getLastPathSegment(audit))
+    setSuccessfulAudits(() => [])
+    commenceRerun(newAudits)
   }
 
   const RunningScreen = () => (
@@ -377,7 +387,7 @@ const AuditAll = () => {
     </VStack>
   );
 
-  const FinishedScreen = () => (
+  const FinishedScreen = ({ commenceRerun }) => (
     <VStack {...BodyVstackCss}>
       <h2>All audits finished.</h2>
       <h3>{successfulAudits.length} audits successfully written, {failedAudits.length} audits failed:</h3>
@@ -391,16 +401,19 @@ const AuditAll = () => {
           <p>{audit}</p>
         </VStack>
       ))}
-      {failedAudits.length > 0 && (
+      {failedAudits.length >= 3 && (
         <Text maxW='80%' fontWeight='650' fontStyle='italic'>
           To reduce fail rates of these audits, consider decreasing the concurrency number, 
           increasing the timeout timer, and check your paths to ensure they match the 
           correct url.
         </Text>
       )}
-      <button className="btn btn-main" onClick={() => handleReset()}>
-        Run Again
-      </button>
+      <HStack {...BodyHstackCss}>
+        {failedAudits.length > 0 && <button className="btn btn-main" onClick={() => handleRunFailedTests(commenceRerun)}> Run All Failed Tests</button>}
+        <button className="btn btn-main" onClick={() => handleReset()}>
+          Configure New Audit Set
+        </button>
+      </HStack>
       <LinkButton
         buttonClass="btn btn-main"
         buttonText="Go To File"
@@ -457,12 +470,14 @@ const AuditAll = () => {
           setIsConcise={setIsConcise}
           loadingTime={loadingTime}
           setLoadingTime={setLoadingTime}
-          commenceAllAudits={testingMethod === 'all' ? commenceEachAllTypeAudit : commenceAllAudits}
+          commenceAllAudits={testingMethod === 'all' ? (pathList) => commenceEachAllTypeAudit(pathList) : (pathList) => commenceAllAudits(pathList)}
           wikiPaths={wikiPaths}
         />
       )}
       {runningStatus === "running" && <RunningScreen />}
-      {runningStatus === "finished" && <FinishedScreen />}
+      {runningStatus === "finished" && <FinishedScreen
+        commenceRerun={testingMethod === 'all' ? (newPaths) => commenceEachAllTypeAudit(newPaths) : (newPaths) => commenceAllAudits(newPaths)}
+      />}
       {runningStatus === "warning" && <WarningScreen />}
       {runningStatus === "cancelled" && <CancelledScreen />}
       {runningStatus === "error" && <ErrorScreen />}
