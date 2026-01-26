@@ -362,11 +362,20 @@ const AuditAll = () => {
     window.electronAPI.getWikiPathsData().then(setWikiPaths).catch(console.error);
   }
 
-  const handleRunFailedTests = (commenceRerun) => {
+  const handleUpdateConcurrency = () => {
+    setSuccessfulAudits(() => [])
+    setFailedAudits(() => [])
+    const newAudits = []
+    for (const audit of failedAudits) newAudits.push(getLastPathSegment(audit))
+    setWikiPaths(newAudits)
+    setRunningStatus("ready")
+  }
+
+  const handleRunFailedTests = (commenceRerunByType) => {
     const newAudits = []
     for (const audit of failedAudits) newAudits.push(getLastPathSegment(audit))
     setSuccessfulAudits(() => [])
-    commenceRerun(newAudits)
+    commenceRerunByType(newAudits)
   }
 
   const RunningScreen = () => (
@@ -387,7 +396,7 @@ const AuditAll = () => {
     </VStack>
   );
 
-  const FinishedScreen = ({ commenceRerun }) => (
+  const FinishedScreen = ({ commenceRerunByType }) => (
     <VStack {...BodyVstackCss}>
       <h2>All audits finished.</h2>
       <h3>{successfulAudits.length} audits successfully written, {failedAudits.length} audits failed:</h3>
@@ -409,16 +418,19 @@ const AuditAll = () => {
         </Text>
       )}
       <HStack {...BodyHstackCss}>
-        {failedAudits.length > 0 && <button className="btn btn-main" onClick={() => handleRunFailedTests(commenceRerun)}> Run All Failed Tests</button>}
+        {failedAudits.length > 0 && <button className="btn btn-main" onClick={() => handleRunFailedTests(commenceRerunByType)}> Run All Failed Tests</button>}
         <button className="btn btn-main" onClick={() => handleReset()}>
           Configure New Audit Set
         </button>
       </HStack>
-      <LinkButton
-        buttonClass="btn btn-main"
-        buttonText="Go To File"
-        destination="../../lists-menu/view-audits"
-      />
+      <HStack {...BodyHstackCss}>
+        {failedAudits.length > 0 && <button className="btn btn-main" onClick={() => handleUpdateConcurrency()}>Update Concurrency</button>}
+        <LinkButton
+          buttonClass="btn btn-main"
+          buttonText="Go To File"
+          destination="../../lists-menu/view-audits"
+        />
+      </HStack>
       <div className="page-spacer"></div>
     </VStack>
   );
@@ -476,7 +488,7 @@ const AuditAll = () => {
       )}
       {runningStatus === "running" && <RunningScreen />}
       {runningStatus === "finished" && <FinishedScreen
-        commenceRerun={testingMethod === 'all' ? (newPaths) => commenceEachAllTypeAudit(newPaths) : (newPaths) => commenceAllAudits(newPaths)}
+        commenceRerunByType={testingMethod === 'all' ? (newPaths) => commenceEachAllTypeAudit(newPaths) : (newPaths) => commenceAllAudits(newPaths)}
       />}
       {runningStatus === "warning" && <WarningScreen />}
       {runningStatus === "cancelled" && <CancelledScreen />}
