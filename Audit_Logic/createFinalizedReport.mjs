@@ -6,7 +6,7 @@ import classifyIssue from './classifyIssue.mjs';
 async function getRawAuditData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime) {
   try {
     const [rawResults, accessibilityScore] = await generatePuppeteerAudit(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
-    console.log(`getRawAuditData Completed. accessibilityScore=${accessibilityScore}, rawResultsType=${typeof rawResults}`);
+    console.error(`getRawAuditData Completed. accessibilityScore=${accessibilityScore}, rawResultsType=${typeof rawResults}`);
     return accessibilityScore === 0 ? [null, 0] : [rawResults, accessibilityScore];
   } catch (err) {
     console.error(`getRawAuditData: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);
@@ -32,7 +32,7 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
   try {
     const [rawResultsData, accessibilityScore] = await getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
     if (accessibilityScore === 0) {
-      console.log(`organizeData: accessibilityScore=0`);
+      console.error(`organizeData: accessibilityScore=0`);
       return { accessibilityScore: 0 };
     }
 
@@ -67,7 +67,7 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
     });
     initialJsonReport['number-of-Items'] = itemCount;
     const finalizedJsonReport = JSON.stringify(initialJsonReport, null, 2);
-    console.log(`organizeData: Completed, itemCount=${itemCount}`);
+    console.error(`organizeData: Completed, itemCount=${itemCount}`);
     return finalizedJsonReport;
   } catch (err) {
     console.error(`organizeData: Failed for ${urlPath}: ${err.message}`);
@@ -78,7 +78,7 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
 export default async function createReport(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
     const dataToWrite = await organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
-    console.log(`createReport: Completed for ${urlPath}`);
+    console.error(`createReport: Completed for ${urlPath}`);
     return dataToWrite;
   } catch (err) {
     console.error(`createReport: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);

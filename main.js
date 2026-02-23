@@ -441,6 +441,8 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
       ? path.join(__dirname, "runAndWriteAudit.mjs")
       : path.join(process.resourcesPath, 'app', "runAndWriteAudit.mjs")
 
+    console.log(`[AUDIT START] ${urlPath} (ID: ${processId}, method: ${testing_method}, viewport: ${viewport})`);
+
     const spawnPromise = new Promise((resolve, reject) => {
       const child = child_process.spawn(
         nodeBinary,
@@ -463,7 +465,8 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
             ...process.env,
             NODE_PATH: isDev
               ? path.join(__dirname, 'node_modules')
-              : path.join(process.resourcesPath, 'app', 'node_modules')
+              : path.join(process.resourcesPath, 'app', 'node_modules'),
+            PUPPETEER_EXECUTABLE_PATH: chromiumPath
           }
         },
       );
@@ -473,33 +476,47 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
       child.stdout.on("data", (data) => {
         const log = data.toString()
         output += log;
+        // stdout now only contains the final JSON result, don't log it to avoid noise
         BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-log', log)
       });
 
       child.stderr.on("data", (data) => {
         const error = data.toString()
         errorOutput += error;
+        // stderr now contains all debug logs - forward to terminal
+        console.error('[AUDIT LOG]:', error.trim());
         BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error-1', error)
       });
 
       child.on("close", (code) => {
         clearTimeout(timeoutId);
         activeProcesses.delete(processId)
+        console.log(`[AUDIT COMPLETE] Process ${processId} exited with code ${code} for ${urlPath}`);
         if (code === 0) {
           try {
             const result = JSON.parse(output.trim());
+            if (result.accessibilityScore > 0) {
+              console.log(`[AUDIT SUCCESS] Score: ${result.accessibilityScore} for ${urlPath}`);
+            } else {
+              console.error(`[AUDIT FAILED] Score: 0 for ${urlPath}`);
+            }
             resolve(result);
           } catch (err) {
-            resolve(output.trim());
+            console.error('[AUDIT ERROR] Failed to parse JSON output:', err.message);
+            console.error('[AUDIT ERROR] Raw output:', output.substring(0, 200));
+            reject(new Error(`Failed to parse audit result: ${err.message}`));
           }
         } else {
-          reject(new Error(`Child exited with code ${code}: ${errorOutput}`));
+          console.error(`[AUDIT FAILED] Process exited with code ${code} for ${urlPath}`);
+          console.error('[AUDIT FAILED] Last error output:', errorOutput.substring(errorOutput.length - 500));
+          reject(new Error(`Child exited with code ${code}`));
         }
       });
 
       child.on("error", (err) => {
         clearTimeout(timeoutId);
         activeProcesses.delete(processId);
+        console.error('[AUDIT ERROR] Process error:', err.message);
         BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error-2', err)
         reject(err);
       });
@@ -509,19 +526,20 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
       timeoutId = setTimeout(
         () => {
           BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error-3', `Audit timeout for ${urlPath}`)
-          console.warn(`Audit timeout for ${urlPath}`);
+          console.warn(`[AUDIT TIMEOUT] ${urlPath} exceeded timeout limit`);
           const child = activeProcesses.get(processId)
           if (child) {
             child.kill("SIGTERM")
             setTimeout(() => {
               if (!child.killed) {
+                console.warn(`[AUDIT TIMEOUT] Process ${processId} did not terminate gracefully, forcing kill`);
                 BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error', `Child process ${processId} did not terminate, sending SIGKILL.`)
                 child.kill("SIGKILL")
               }
               activeProcesses.delete(processId)
             }, 1000);
           }
-          resolve("get-spawn: did not resolve due to timeout");
+          resolve({ error: "Audit timeout", accessibilityScore: 0 });
         },
         testing_method == "all" ? TIMEOUT_ALL_TESTS : TIMEOUT_SINGULAR_TEST
       );

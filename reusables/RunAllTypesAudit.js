@@ -71,13 +71,15 @@ const runAllTypesAudit = async (
             loadingTime,
             isConcise
           );
-          console.log(`get-spawn result for size ${size}`)
-          if (typeof result === "string" && result.includes("Audit complete, report written successfully")) {
-            return "Audit complete, report written successfully";
-          } else if (typeof result === "string" && result.includes("Audit incomplete")) {
-            throw new Error(`Audit failed for size ${size}: ${result}`);
-          } else if (typeof result === "object" && result.accessibilityScore > 0) {
-            return "Audit complete, report written successfully";
+          console.log(`get-spawn result for size ${size}:`, result)
+          // Check if audit succeeded based on accessibilityScore
+          if (typeof result === "object" && result.accessibilityScore > 0) {
+            console.log(`Audit succeeded for size ${size}, score: ${result.accessibilityScore}`);
+            return result;
+          } else if (typeof result === "object" && result.error) {
+            throw new Error(`Audit failed for size ${size}: ${result.error}`);
+          } else if (typeof result === "object" && result.accessibilityScore === 0) {
+            throw new Error(`Audit failed for size ${size}: accessibilityScore is 0`);
           }
           throw new Error (`Audit failed for size ${size}: ${JSON.stringify(result)}`)
         } catch (err) {

@@ -21,7 +21,7 @@ export default async function generatePuppeteerAudit(
   const viewport = { width: parseInt(viewportWidth), height: 800 }
   const EXPLICIT_PORT = 9222 + Math.floor(Math.random() * 1000)
 
-  console.log(`Puppeteer js file loaded. url: ${puppeteerUrl}, testing method: ${TESTING_METHOD}, user agent: ${USER_AGENT}, loading time: ${LOADING_TIME}, viewport: ${viewportWidth}, port for this run: ${EXPLICIT_PORT}`)
+  console.error(`Puppeteer js file loaded. url: ${puppeteerUrl}, testing method: ${TESTING_METHOD}, user agent: ${USER_AGENT}, loading time: ${LOADING_TIME}, viewport: ${viewportWidth}, port for this run: ${EXPLICIT_PORT}`)
 
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
   if (!fs.existsSync(executablePath)) {
@@ -59,42 +59,17 @@ export default async function generatePuppeteerAudit(
   try {
     const useConfig = isViewingAudit == "no" ? puppeteerHeadlessConfig : puppeteerConfig;
     browser = await puppeteer.launch(useConfig);
-    console.log('Puppeteer successfully launched.')
-    const page = await browser.newPage();
-    page.on('console', (msg) => {
-      if (msg.type() == 'error') console.log(`Chrome Console [${msg.type()}]: ${msg.text()}`);
-    })
-    // page.on('pageerror', (err) => console.error('Chrome Page Error:', err.message));
-    // page.on('requestfailed', (req) => console.error('Chrome Request Failed:', req.url(), req.failure().errorText));
+    console.error('Puppeteer successfully launched.')
 
-    const ip = await page.evaluate(async () => {
-      const res = await fetch('https://api.ipify.org?format=json');
-      const data = await res.json();
-      return data.ip;
-    });
-
-    await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
-    await page.goto(puppeteerUrl, { waitUntil: "networkidle2", timeout: LOADING_TIME });
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); // scroll to bottom for lazy loads
-    await new Promise((r) => setTimeout(r, 1000));
-
+    // Get WebSocket endpoint for Lighthouse to connect
     const wsEndpoint = browser.wsEndpoint();
     const endpointURL = new URL(wsEndpoint);
-    console.log('Parsed Endpoint Port:', endpointURL.port)
-    const wsTest = await page.evaluate((endpoint) => {
-      return new Promise((resolve) => {
-        const ws = new WebSocket(endpoint)
-        ws.onopen = () => resolve('WebSocket connected')
-        ws.onerror = () => resolve('WebSocket failed')
-        setTimeout(() => resolve('WebSocket timeout'), 5000)
-      })
-    }, wsEndpoint)
-    console.log('WebSocket Test Result:', wsTest)
+    console.error('Browser debugging port:', endpointURL.port)
 
     const options = {
       port: parseInt(endpointURL.port),
       output: OUTPUT_FORMAT,
-      logLevel: "verbose",
+      logLevel: "error",
       maxWaitForLoad: LOADING_TIME,
       disableStorageReset: true,
       onlyCategories: ["accessibility"]
@@ -112,9 +87,11 @@ export default async function generatePuppeteerAudit(
           disabled: false,
         },
         onlyCategories: ["accessibility"],
-        pauseAfterFcpMs: 8000,
+        pauseAfterFcpMs: 1000,
+        pauseAfterLoadMs: 1000,
         maxWaitForLoad: LOADING_TIME,
         emulatedUserAgent: USER_AGENT,
+        skipAudits: ['uses-http2', 'bf-cache', 'prioritize-lcp-image'],
       },
     };
 
@@ -130,29 +107,30 @@ export default async function generatePuppeteerAudit(
           disabled: false,
         },
         onlyCategories: ["accessibility"],
-        pauseAfterFcpMs: 8000,
+        pauseAfterFcpMs: 1000,
+        pauseAfterLoadMs: 1000,
         maxWaitForLoad: LOADING_TIME,
+        skipAudits: ['uses-http2', 'bf-cache', 'prioritize-lcp-image'],
       },
     };
 
     const config = isUsingUserAgent ? configWithUserAgent : configWithoutUserAgent
 
     try {
-      // const runResult = await Promise.race([
-      //   lighthouse(puppeteerUrl, options, config),
-      //   new Promise((_, reject) => setTimeout(() => reject(new Error ('Lighthouse timed out')), LIGHTHOUSE_TIMEOUT)),
-      // ])
+      console.error(`Starting Lighthouse audit for ${puppeteerUrl}...`);
       const runResult = await lighthouse(puppeteerUrl, options, config);
-      console.log(`Lighthouse audit complete.`)
+      console.error(`Lighthouse audit complete.`)
+
       if (!runResult || !runResult.lhr) {
         console.error('Lighthouse returned invalid result:', JSON.stringify(runResult, null, 2))
         throw new Error(`Invalid Lighthouse result`)
       }
-      await page.close()
-      await browser.close();
+
       const report = runResult.report;
       const accessibilityScore = runResult.lhr.categories.accessibility.score * 100;
-      console.log(`Accessibility Score: ${accessibilityScore}`)
+      console.error(`Accessibility Score: ${accessibilityScore}`)
+
+      await browser.close();
       return [report, accessibilityScore];
     } catch (lighthouseError) {
       console.error('Lighthouse Error:', lighthouseError.message)
