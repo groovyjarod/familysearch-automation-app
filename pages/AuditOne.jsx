@@ -288,16 +288,11 @@ const AuditOne = () => {
           isConcise
         );
         console.log(`runAllTypesAudit result:`, result);
-        if (result.includes("|||") ||
-        typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)
-        ) {
+        if (typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)) {
           setResultContents(handleAuditResult(result))
           return
-        } else if (typeof result === "string" && result.includes("Audit incomplete.")) {
-          throw new Error(`In AuditOne handleAllSizesAudit: Audit incomplete for all: ${result}`);
-        } else if (typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)) {
-          setResultContents(handleAuditResult(result))
-          return
+        } else if (typeof result === "object" && result.error) {
+          throw new Error(`In AuditOne handleAllSizesAudit: ${result.error}`);
         }
         throw new Error(`In AuditOne handleAllSizesAudit: Audit failed for all: ${JSON.stringify(result)}`);
       });
@@ -341,11 +336,13 @@ const AuditOne = () => {
           loadingTime,
           isConcise
         );
-        if (result.includes("|||") || typeof result === "object" && result.accessibilityScore > 0) {
+        if (typeof result === "object" && result.accessibilityScore > 0) {
           setResultContents(handleAuditResult(result))
           return
-        } else if (typeof result === "string" && result.includes("Audit incomplete.")) {
-          throw new Error(`AuditOne handleAudit: Audit failed for ${testingMethod}: ${result}`);
+        } else if (typeof result === "object" && result.error) {
+          throw new Error(`AuditOne handleAudit: ${result.error}`);
+        } else if (typeof result === "object" && result.accessibilityScore === 0) {
+          throw new Error(`AuditOne handleAudit: Audit completed but accessibilityScore is 0 for ${testingMethod}`);
         }
         throw new Error(`AuditOne handleAudit: Audit failed for ${testingMethod}: ${JSON.stringify(result)}`);
       });
