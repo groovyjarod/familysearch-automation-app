@@ -327,18 +327,16 @@ const AuditAll = () => {
               loadingTime,
               isConcise
             );
-            // Check if audit succeeded based on accessibilityScore
             if (typeof result === "object" && result.accessibilityScore > 0) {
               console.log(`✓ Test passed for URL: ${fullUrl}`);
               setSuccessfulAudits((prev) => [...prev, fullUrl])
-              return; // Success - exit retryAudit
+              return
             } else if (typeof result === "object" && Object.values(result).every(r => r && r.accessibilityScore > 0)) {
               // For "all sizes" audits that return multiple results
               console.log(`✓ Test passed for URL: ${fullUrl}`);
               setSuccessfulAudits((prev) => [...prev, fullUrl])
-              return; // Success - exit retryAudit
+              return
             } else {
-              // Audit failed - throw error to trigger retry
               const score = result?.accessibilityScore ?? 'unknown';
               const errorMsg = result?.error || 'Unknown error';
               throw new Error(`Audit failed for ${fullUrl}: score=${score}, error=${errorMsg}`);
