@@ -367,18 +367,24 @@ ipcMain.handle('open-results-file', async (event, filename, folder) => {
 })
 
 ipcMain.handle("save-file", async (event, filePath, fileContent) => {
-  const outputDir = isDev
+  const outputPath = isDev
     ? path.join(__dirname, "audits", filePath)
     : path.join(app.getPath('documents'), "audits", filePath)
   try {
-    await fs.writeFileSync(
-      outputDir,
+    // Create directory before writing file to prevent ENOENT errors
+    const outputDir = path.dirname(outputPath);
+    await fsPromise.mkdir(outputDir, { recursive: true });
+
+    // Use async writeFile instead of sync
+    await fsPromise.writeFile(
+      outputPath,
       JSON.stringify(fileContent, null, 2),
       "utf8"
     );
     return { success: true, filePath: filePath, fileContent: fileContent };
   } catch (error) {
-    console.error(`Failed to save file: ${error}`);
+    console.error(`Failed to save file ${outputPath}: ${error.message}`);
+    console.error(`Error stack: ${error.stack}`);
     return { success: false, error: error.message };
   }
 });
