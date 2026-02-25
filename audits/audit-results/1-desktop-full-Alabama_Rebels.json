@@ -1,0 +1,24 @@
+{
+  "accessibilityScore": 97,
+  "frame-title-1": {
+    "title": "`<frame>` or `<iframe>` elements do not have a title",
+    "description": "Screen reader users rely on frame titles to describe the contents of frames. [Learn more about frame titles](https://dequeuniversity.com/rules/axe/4.10/frame-title).",
+    "items": [
+      {
+        "snippet": "<iframe id=\":2.container\" class=\"VIpgJd-ZVi9od-ORHb-OEVmcd skiptranslate\" frameborder=\"0\" src=\"#\" style=\"visibility:visible\">",
+        "selector": "body.skin-vector > div.skiptranslate > iframe#:2.container",
+        "explanation": "Fix any of the following:\n  Element has no title attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+        "boundingRect": {
+          "top": 0,
+          "bottom": 39,
+          "left": 0,
+          "right": 1920,
+          "width": 1920,
+          "height": 39
+        },
+        "itemCategory": "skin"
+      }
+    ]
+  },
+  "number-of-Items": 1
+}

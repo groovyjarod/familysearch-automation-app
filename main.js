@@ -10,6 +10,29 @@ const pLimit = require("p-limit");
 const pLimitDefault = require("p-limit").default;
 require("@electron/remote/main").initialize();
 
+// Windows-safe directory creation with retry logic
+async function ensureDir(dirPath, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fsPromise.mkdir(dirPath, { recursive: true });
+      return; // Success
+    } catch (err) {
+      // Ignore EEXIST - directory already exists (safe)
+      if (err.code === 'EEXIST') {
+        return;
+      }
+      // Retry on Windows file locking errors
+      if ((err.code === 'EPERM' || err.code === 'EACCES' || err.code === 'EBUSY') && i < retries - 1) {
+        console.error(`ensureDir: Retry ${i + 1} for ${dirPath} due to ${err.code}`);
+        await new Promise(resolve => setTimeout(resolve, 100 * (i + 1))); // Exponential backoff
+        continue;
+      }
+      // Other errors or retries exhausted - throw
+      throw err;
+    }
+  }
+}
+
 // ------------ Update Code -----------
 
 autoUpdater.logger = require('electron-log')
@@ -112,10 +135,10 @@ const createWindow = async () => {
   const allFolderPaths = ['all-audit-sizes', 'audit-results', 'old-audit-results', 'custom-audit-results']
   try {
     const auditsPath = path.join(app.getPath('documents'), 'audits')
-    await fsPromise.mkdir(auditsPath, { recursive: true })
+    await ensureDir(auditsPath)
     for (let folderPath of allFolderPaths) {
       const newAuditPath = path.join(auditsPath, folderPath)
-      await fsPromise.mkdir(newAuditPath, { recursive: true })
+      await ensureDir(newAuditPath)
     }
   } catch (err) {
     console.error('Error in creating folder paths in documents:', err)
@@ -373,7 +396,7 @@ ipcMain.handle("save-file", async (event, filePath, fileContent) => {
   try {
     // Create directory before writing file to prevent ENOENT errors
     const outputDir = path.dirname(outputPath);
-    await fsPromise.mkdir(outputDir, { recursive: true });
+    await ensureDir(outputDir);
 
     // Use async writeFile instead of sync
     await fsPromise.writeFile(
@@ -592,8 +615,8 @@ ipcMain.handle("move-audit-files", async () => {
   const limit = pLimitDefault(5);
 
   try {
-    await fsPromise.mkdir(sourceDir, { recursive: true })
-    await fsPromise.mkdir(destinationDir, { recursive: true });
+    await ensureDir(sourceDir)
+    await ensureDir(destinationDir);
 
     const existingFiles = await fsPromise.readdir(destinationDir);
     await Promise.all(
