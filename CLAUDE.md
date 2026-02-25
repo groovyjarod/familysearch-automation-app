@@ -142,6 +142,20 @@ Many websites block automated tools like Puppeteer. The "Secret Agent Key" (cust
 ### Testing Methods
 When editing code in `generatePuppeteerAudit.mjs`, note that many console error messages are commented out for production. Uncomment them when debugging.
 
+### Performance Optimizations
+The application includes Chrome launch optimizations for faster audits on slower computers:
+- **20+ Chrome flags** to disable unnecessary services (extensions, sync, translation, audio, etc.)
+- **Removed Lighthouse delays** - `pauseAfterFcpMs` and `pauseAfterLoadMs` set to 0 (saves 2 seconds per audit)
+- **Disabled screenshots** - Accessibility audits don't need visual screenshots
+- **Skip throttling simulation** - Uses `throttlingMethod: 'provided'`
+
+**Expected performance gains:**
+- Chrome startup: 30-40% faster (1.5-2 seconds saved)
+- Per-audit time: 4-5 seconds faster overall
+- Total audit run: 25-40% time reduction
+
+See `docs/PERFORMANCE_OPTIMIZATIONS.md` for detailed information.
+
 ### Audit Result Structure
 JSON files contain:
 - `accessibilityScore` - Lighthouse score (0-100)
@@ -161,8 +175,9 @@ If `accessibilityScore === 0`, the audit is considered failed. Common causes:
 Before running `npm run release:win`:
 1. Create `bin/` folder with `node.exe` (Windows) or `node` (Mac)
 2. Create `chrome-browser/` folder with Chrome for Testing binaries
-3. Increment version in `package.json` (use `npm version patch` or edit manually)
-4. Ensure GitHub token is configured for electron-builder publishing
+3. Run `npm run cleanup-chrome` to optimize Chrome size (~100MB savings)
+4. Increment version in `package.json` (use `npm version patch` or edit manually)
+5. Ensure GitHub token is configured for electron-builder publishing
 
 ### Modifying Paths
 

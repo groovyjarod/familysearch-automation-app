@@ -272,6 +272,7 @@ const AuditAll = () => {
             isConcise
           )
           console.log(result)
+          console.log(`✓ Test passed for URL: ${fullUrl}`);
           setSuccessfulAudits((prev) => [...prev, fullUrl])
         } catch (err) {
           if (err.message === "Audit cancelled by user.") {
@@ -300,7 +301,8 @@ const AuditAll = () => {
       const conciseTag = isConcise === "yes" ? "concise" : "full"
       const fullUrl = `${initialUrl}${wikiPath}`;
       const outputDirPath = 'audit-results'
-      const outputFilePath = `${index + 1}-${testingMethod}-${conciseTag}-${wikiPath}.json`;
+      const cleanPathName = getLastPathSegment(wikiPath) || `path-${index + 1}`;
+      const outputFilePath = `${index + 1}-${testingMethod}-${conciseTag}-${cleanPathName}.json`;
       const processId = `audit-${Date.now()}-${index}`
       const isViewingAudit = "no";
       return numberOfConcurrentAudits(() =>
@@ -327,10 +329,12 @@ const AuditAll = () => {
             );
             // Check if audit succeeded based on accessibilityScore
             if (typeof result === "object" && result.accessibilityScore > 0) {
+              console.log(`✓ Test passed for URL: ${fullUrl}`);
               setSuccessfulAudits((prev) => [...prev, fullUrl])
               return; // Success - exit retryAudit
             } else if (typeof result === "object" && Object.values(result).every(r => r && r.accessibilityScore > 0)) {
               // For "all sizes" audits that return multiple results
+              console.log(`✓ Test passed for URL: ${fullUrl}`);
               setSuccessfulAudits((prev) => [...prev, fullUrl])
               return; // Success - exit retryAudit
             } else {
