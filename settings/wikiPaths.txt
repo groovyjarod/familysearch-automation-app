@@ -1,3 +1,10 @@
+Alabama_Rebels
+Alabama_Record_Finder
+Alabama_Recruits
+Alabama_Reserves
+Alabama_Schools_and_Education
+Alabama_Societies
+Alabama_State_Artillery
 Alabama_Taxation
 Alabama_Voting_Records
 Alachua-Tampa_Bay_Trail

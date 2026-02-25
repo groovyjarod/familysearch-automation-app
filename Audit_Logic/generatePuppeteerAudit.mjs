@@ -19,7 +19,8 @@ export default async function generatePuppeteerAudit(
   const LOADING_TIME = parseInt(loadingTime) * 1000; // timeout timer in milliseconds
   // const LIGHTHOUSE_TIMEOUT = 60000;
   const viewport = { width: parseInt(viewportWidth), height: 800 }
-  const EXPLICIT_PORT = 9222 + Math.floor(Math.random() * 1000)
+  // Use process ID for deterministic port assignment (faster than random)
+  const EXPLICIT_PORT = 9222 + (process.pid % 1000)
 
   console.error(`Puppeteer js file loaded. url: ${puppeteerUrl}, testing method: ${TESTING_METHOD}, user agent: ${USER_AGENT}, loading time: ${LOADING_TIME}, viewport: ${viewportWidth}, port for this run: ${EXPLICIT_PORT}`)
 
@@ -39,7 +40,28 @@ export default async function generatePuppeteerAudit(
     '--disable-setuid-sandbox',
     `--remote-debugging-port=${EXPLICIT_PORT}`,
     '--remote-allow-origins=*',
-    '--disable-dev-shm-usage'
+    '--disable-dev-shm-usage',
+    // Performance optimizations for faster Chrome startup
+    '--disable-extensions',
+    '--disable-default-apps',
+    '--disable-background-networking',
+    '--disable-sync',
+    '--disable-translate',
+    '--disable-features=AudioServiceOutOfProcess,Translate,BackForwardCache',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-breakpad',
+    '--disable-component-extensions-with-background-pages',
+    '--disable-ipc-flooding-protection',
+    '--disable-renderer-backgrounding',
+    '--mute-audio',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--metrics-recording-only',
+    '--disable-hang-monitor',
+    '--disable-prompt-on-repost',
+    '--disable-domain-reliability',
+    '--disable-component-update'
   ]
 
   if (isUsingUserAgent) puppeteerArgs.push(`--user-agent=${USER_AGENT}`)
@@ -87,11 +109,15 @@ export default async function generatePuppeteerAudit(
           disabled: false,
         },
         onlyCategories: ["accessibility"],
-        pauseAfterFcpMs: 1000,
-        pauseAfterLoadMs: 1000,
+        pauseAfterFcpMs: 0, // Reduced from 1000ms - accessibility audits don't need FCP delay
+        pauseAfterLoadMs: 0, // Reduced from 1000ms - saves 2 seconds per audit
         maxWaitForLoad: LOADING_TIME,
         emulatedUserAgent: USER_AGENT,
         skipAudits: ['uses-http2', 'bf-cache', 'prioritize-lcp-image'],
+        // Performance optimizations
+        disableStorageReset: true,
+        disableFullPageScreenshot: true, // Don't need screenshots for accessibility
+        throttlingMethod: 'provided', // Skip throttling simulation
       },
     };
 
@@ -107,10 +133,14 @@ export default async function generatePuppeteerAudit(
           disabled: false,
         },
         onlyCategories: ["accessibility"],
-        pauseAfterFcpMs: 1000,
-        pauseAfterLoadMs: 1000,
+        pauseAfterFcpMs: 0, // Reduced from 1000ms - accessibility audits don't need FCP delay
+        pauseAfterLoadMs: 0, // Reduced from 1000ms - saves 2 seconds per audit
         maxWaitForLoad: LOADING_TIME,
         skipAudits: ['uses-http2', 'bf-cache', 'prioritize-lcp-image'],
+        // Performance optimizations
+        disableStorageReset: true,
+        disableFullPageScreenshot: true, // Don't need screenshots for accessibility
+        throttlingMethod: 'provided', // Skip throttling simulation
       },
     };
 
