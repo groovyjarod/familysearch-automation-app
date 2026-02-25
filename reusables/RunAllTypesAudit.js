@@ -7,7 +7,8 @@ const runAllTypesAudit = async (
   isCancelled,
   setRunningStatus,
   isUsingUserAgent,
-  isConcise
+  isConcise,
+  loadingTime
 ) => {
   if (isCancelled) {
     throw new Error("Audit cancelled by user");
@@ -49,7 +50,8 @@ const runAllTypesAudit = async (
     const viewportWidth = size > 500 ? "desktop" : "mobile"
     const processId = `audit-${Date.now()}-${size}`;
     const isViewingAudit = "no";
-    const loadingTime = 25000
+    // Use passed loadingTime parameter instead of hardcoded value
+    const loadingTimeMs = loadingTime || "25"
 
     return runAllSizes(() =>
       retryAudit(async () => {
@@ -68,7 +70,7 @@ const runAllTypesAudit = async (
             processId,
             isUsingUserAgent,
             isViewingAudit,
-            loadingTime,
+            loadingTimeMs,
             isConcise
           );
           console.log(`get-spawn result for size ${size}:`, result)

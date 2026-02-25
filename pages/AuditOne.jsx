@@ -285,7 +285,8 @@ const AuditOne = () => {
           isCancelledRef.current,
           setRunningStatus,
           isUsingUserAgent,
-          isConcise
+          isConcise,
+          loadingTime
         );
         console.log(`runAllTypesAudit result:`, result);
         if (typeof result === "object" && Object.values(result).every(r => r.accessibilityScore > 0)) {

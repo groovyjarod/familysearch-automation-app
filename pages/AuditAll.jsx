@@ -269,7 +269,8 @@ const AuditAll = () => {
             isCancelledRef.current,
             setRunningStatus,
             isUsingUserAgent,
-            isConcise
+            isConcise,
+            loadingTime
           )
           console.log(result)
           console.log(`✓ Test passed for URL: ${fullUrl}`);
