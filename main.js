@@ -533,12 +533,49 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
           } catch (err) {
             console.error('[AUDIT ERROR] Failed to parse JSON output:', err.message);
             console.error('[AUDIT ERROR] Raw output:', output.substring(0, 200));
-            reject(new Error(`Failed to parse audit result: ${err.message}`));
+
+            const parseError = {
+              error: `Failed to parse audit result: ${err.message}`,
+              errorLocation: 'main.js - get-spawn handler (JSON parsing)',
+              friendlyMessage: 'Could not read audit results',
+              suggestion: 'The audit may have produced invalid output. Check console logs.',
+              url: urlPath,
+              stack: err.stack,
+              rawOutput: output.substring(0, 500),
+              accessibilityScore: 0
+            };
+
+            resolve(parseError);
           }
         } else {
           console.error(`[AUDIT FAILED] Process exited with code ${code} for ${urlPath}`);
           console.error('[AUDIT FAILED] Last error output:', errorOutput.substring(errorOutput.length - 500));
-          reject(new Error(`Child exited with code ${code}`));
+
+          // Try to parse error details from output
+          try {
+            const errorResult = JSON.parse(output.trim());
+            // If we have a structured error from the child process, pass it through
+            if (errorResult.error) {
+              console.error('[AUDIT FAILED] Structured error from child:', errorResult.error);
+              resolve(errorResult);
+              return;
+            }
+          } catch (parseErr) {
+            // If we can't parse, create our own error object
+          }
+
+          const exitError = {
+            error: `Audit process failed with exit code ${code}`,
+            errorLocation: 'main.js - get-spawn handler (child process exit)',
+            friendlyMessage: 'Audit process crashed or failed to complete',
+            suggestion: 'Check the error logs for details. This may indicate a Chrome crash or system resource issue.',
+            url: urlPath,
+            exitCode: code,
+            lastErrorOutput: errorOutput.substring(errorOutput.length - 1000),
+            accessibilityScore: 0
+          };
+
+          resolve(exitError);
         }
       });
 
@@ -547,13 +584,25 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
         activeProcesses.delete(processId);
         console.error('[AUDIT ERROR] Process error:', err.message);
         BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error-2', err)
-        reject(err);
+
+        const processError = {
+          error: `Failed to spawn audit process: ${err.message}`,
+          errorLocation: 'main.js - get-spawn handler (process spawn error)',
+          friendlyMessage: 'Could not start the audit process',
+          suggestion: 'This may indicate a problem with Node.js or system permissions. Try restarting the app.',
+          url: urlPath,
+          stack: err.stack,
+          accessibilityScore: 0
+        };
+
+        resolve(processError);
       });
     });
 
     const timeoutPromise = new Promise((resolve) => {
       timeoutId = setTimeout(
         () => {
+          const timeoutLimit = testing_method == "all" ? TIMEOUT_ALL_TESTS : TIMEOUT_SINGULAR_TEST;
           BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error-3', `Audit timeout for ${urlPath}`)
           console.warn(`[AUDIT TIMEOUT] ${urlPath} exceeded timeout limit`);
           const child = activeProcesses.get(processId)
@@ -568,7 +617,21 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
               activeProcesses.delete(processId)
             }, 1000);
           }
-          resolve({ error: "Audit timeout", accessibilityScore: 0 });
+
+          const timeoutError = {
+            error: `Audit exceeded ${timeoutLimit/1000} second timeout limit`,
+            errorLocation: 'main.js - get-spawn handler (timeout)',
+            friendlyMessage: 'Audit took too long and was terminated',
+            suggestion: testing_method == "all"
+              ? 'All-sizes audits take longer. Ensure stable internet connection and try again.'
+              : 'The page may be loading slowly. Try increasing the timeout in settings or check your connection.',
+            url: urlPath,
+            timeoutLimit: `${timeoutLimit/1000} seconds`,
+            testingMethod: testing_method,
+            accessibilityScore: 0
+          };
+
+          resolve(timeoutError);
         },
         testing_method == "all" ? TIMEOUT_ALL_TESTS : TIMEOUT_SINGULAR_TEST
       );

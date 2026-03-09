@@ -79,13 +79,48 @@ const runAllTypesAudit = async (
             console.log(`Audit succeeded for size ${size}, score: ${result.accessibilityScore}`);
             return result;
           } else if (typeof result === "object" && result.error) {
-            throw new Error(`Audit failed for size ${size}: ${result.error}`);
+            // Preserve full error details
+            const error = new Error(`Audit failed for size ${size}px: ${result.error}`);
+            error.errorDetails = {
+              ...result,
+              size: size,
+              errorLocation: `RunAllTypesAudit.js - size ${size}px audit`
+            };
+            throw error;
           } else if (typeof result === "object" && result.accessibilityScore === 0) {
-            throw new Error(`Audit failed for size ${size}: accessibilityScore is 0`);
+            const zeroScoreError = new Error(`Audit failed for size ${size}px: returned score of 0`);
+            zeroScoreError.errorDetails = {
+              error: `Audit returned accessibility score of 0 for ${size}px viewport`,
+              errorLocation: `RunAllTypesAudit.js - size ${size}px validation`,
+              friendlyMessage: `${size}px viewport audit did not complete successfully`,
+              suggestion: 'This viewport size may have timed out. Try running it individually with increased timeout.',
+              size: size,
+              result: result
+            };
+            throw zeroScoreError;
           }
-          throw new Error (`Audit failed for size ${size}: ${JSON.stringify(result)}`)
+          // Unknown result format
+          const unknownError = new Error(`Audit failed for size ${size}px: unexpected result format`);
+          unknownError.errorDetails = {
+            error: 'Unexpected audit result format',
+            errorLocation: `RunAllTypesAudit.js - size ${size}px unknown result`,
+            friendlyMessage: `${size}px viewport audit produced unexpected result`,
+            suggestion: 'This is an internal error. Try running individual audits instead.',
+            size: size,
+            result: JSON.stringify(result)
+          };
+          throw unknownError;
         } catch (err) {
-          throw err
+          // Preserve error details as we rethrow
+          if (!err.errorDetails) {
+            err.errorDetails = {
+              error: err.message,
+              errorLocation: `RunAllTypesAudit.js - size ${size}px exception`,
+              size: size,
+              stack: err.stack
+            };
+          }
+          throw err;
         }
       })
     );
@@ -109,7 +144,20 @@ const runAllTypesAudit = async (
       console.error(
         `Error reading audit file for size ${size}: ${err.message}`
       );
-      throw err;
+
+      // Add context to file read errors
+      const fileError = new Error(`Failed to read audit file for ${size}px viewport`);
+      fileError.errorDetails = {
+        error: `Could not read or parse audit file for ${size}px`,
+        errorLocation: 'RunAllTypesAudit.js - reading audit results',
+        friendlyMessage: `Could not retrieve results for ${size}px viewport`,
+        suggestion: 'The audit may have failed to save its results. Try running the audit again.',
+        size: size,
+        filePath: filePath,
+        originalError: err.message,
+        stack: err.stack
+      };
+      throw fileError;
     }
   });
 
@@ -128,7 +176,15 @@ const runAllTypesAudit = async (
   const filePath = `${folderPath}/allTypes-${getLastPathSegment(fullUrl)}.json`;
   const finalResult = await window.electronAPI.saveFile(filePath, allAudits);
   if (!finalResult) {
-    throw new Error(`Failed to save allTypes file: ${filePath}`);
+    const saveError = new Error(`Failed to save allTypes file`);
+    saveError.errorDetails = {
+      error: 'Could not save combined audit results',
+      errorLocation: 'RunAllTypesAudit.js - saving final results',
+      friendlyMessage: 'All audits completed but results could not be saved',
+      suggestion: 'Check that the audits folder is writable and has sufficient disk space',
+      filePath: filePath
+    };
+    throw saveError;
   }
 
   console.log(finalResult)
