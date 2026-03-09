@@ -10,7 +10,14 @@ async function getRawAuditData(urlPath, testing_method, user_agent, viewport, is
     return accessibilityScore === 0 ? [null, 0] : [rawResults, accessibilityScore];
   } catch (err) {
     console.error(`getRawAuditData: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);
-    return [null, 0];
+
+    // Preserve error context from lower levels
+    if (!err.location?.includes('getRawAuditData')) {
+      err.previousLocation = err.location
+      err.location = 'createFinalizedReport.mjs - getRawAuditData'
+    }
+
+    throw err;
   }
 }
 
@@ -18,12 +25,26 @@ async function getRawAuditData(urlPath, testing_method, user_agent, viewport, is
 async function getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
     const [auditResults, accessibilityScore] = await getRawAuditData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime);
-    if (accessibilityScore === 0) return [null, 0]
+    if (accessibilityScore === 0) {
+      const zeroScoreError = new Error('[getAuditAccessibilityData] Audit returned accessibility score of 0, indicating audit failure')
+      zeroScoreError.location = 'createFinalizedReport.mjs - getAuditAccessibilityData'
+      zeroScoreError.url = urlPath
+      zeroScoreError.friendlyMessage = 'Audit did not complete successfully'
+      throw zeroScoreError
+    }
+
     const trimmedData = trimAuditData(auditResults, isConcise)
     return [trimmedData, accessibilityScore];
   } catch (err) {
     console.error(`getAuditAccessibilityData: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);
-    return [null, 0];
+
+    // Preserve error context
+    if (!err.location?.includes('getAuditAccessibilityData')) {
+      err.previousLocation = err.location
+      err.location = 'createFinalizedReport.mjs - getAuditAccessibilityData'
+    }
+
+    throw err;
   }
 }
 
@@ -31,10 +52,6 @@ async function getAuditAccessibilityData(urlPath, testing_method, user_agent, vi
 async function organizeData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise) {
   try {
     const [rawResultsData, accessibilityScore] = await getAuditAccessibilityData(urlPath, testing_method, user_agent, viewport, isUsingUserAgent, isViewingAudit, loadingTime, isConcise);
-    if (accessibilityScore === 0) {
-      console.error(`organizeData: accessibilityScore=0`);
-      return { accessibilityScore: 0 };
-    }
 
     const initialJsonReport = {};
     let itemCount = 0;
@@ -71,7 +88,14 @@ async function organizeData(urlPath, testing_method, user_agent, viewport, isUsi
     return finalizedJsonReport;
   } catch (err) {
     console.error(`organizeData: Failed for ${urlPath}: ${err.message}`);
-    return { accessibilityScore: 0 };
+
+    // Preserve error context
+    if (!err.location?.includes('organizeData')) {
+      err.previousLocation = err.location
+      err.location = 'createFinalizedReport.mjs - organizeData (data processing)'
+    }
+
+    throw err;
   }
 }
 // default function that invokes all others
@@ -82,6 +106,13 @@ export default async function createReport(urlPath, testing_method, user_agent, 
     return dataToWrite;
   } catch (err) {
     console.error(`createReport: Failed for ${urlPath}: ${err.message}, stack: ${err.stack}`);
-    return { accessibilityScore: 0 };
+
+    // Preserve all error context and add final location
+    if (!err.location?.includes('createReport')) {
+      err.previousLocation = err.location
+      err.location = 'createFinalizedReport.mjs - createReport (entry point)'
+    }
+
+    throw err;
   }
 }

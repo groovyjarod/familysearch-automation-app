@@ -153,7 +153,11 @@ export default async function generatePuppeteerAudit(
 
       if (!runResult || !runResult.lhr) {
         console.error('Lighthouse returned invalid result:', JSON.stringify(runResult, null, 2))
-        throw new Error(`Invalid Lighthouse result`)
+        const invalidError = new Error(`[generatePuppeteerAudit] Invalid Lighthouse result - Lighthouse did not return a valid report structure. This may indicate the page failed to load or Lighthouse crashed during execution.`)
+        invalidError.location = 'generatePuppeteerAudit.mjs - Lighthouse validation'
+        invalidError.url = puppeteerUrl
+        invalidError.details = 'No valid LHR (Lighthouse Result) object received'
+        throw invalidError
       }
 
       const report = runResult.report;
@@ -165,6 +169,28 @@ export default async function generatePuppeteerAudit(
     } catch (lighthouseError) {
       console.error('Lighthouse Error:', lighthouseError.message)
       console.error('Lighthouse Stack:', lighthouseError.stack)
+
+      // Add context to lighthouse errors
+      if (!lighthouseError.location) {
+        lighthouseError.location = 'generatePuppeteerAudit.mjs - Lighthouse execution'
+        lighthouseError.url = puppeteerUrl
+
+        // Identify specific lighthouse error types
+        if (lighthouseError.message.includes('Timeout') || lighthouseError.message.includes('timeout')) {
+          lighthouseError.friendlyMessage = `Page took too long to load (exceeded ${LOADING_TIME/1000} second timeout)`
+          lighthouseError.suggestion = 'Try increasing the timeout value or check if the page loads slowly'
+        } else if (lighthouseError.message.includes('403')) {
+          lighthouseError.friendlyMessage = 'Access denied (403 error) - website blocked the audit'
+          lighthouseError.suggestion = 'Enable User Agent Key if this is an authorized site'
+        } else if (lighthouseError.message.includes('net::ERR')) {
+          lighthouseError.friendlyMessage = 'Network error while loading the page'
+          lighthouseError.suggestion = 'Check your internet connection and verify the URL is correct'
+        } else if (lighthouseError.message.includes('Navigation')) {
+          lighthouseError.friendlyMessage = 'Failed to navigate to the page'
+          lighthouseError.suggestion = 'Verify the URL is accessible and properly formatted'
+        }
+      }
+
       throw lighthouseError
     }
 
@@ -172,6 +198,22 @@ export default async function generatePuppeteerAudit(
     console.error("In generatePuppeteerAudit: ", err.message);
     console.error("Stack Trace:", err.stack)
     if (browser) await browser.close()
-    return [err, 0];
+
+    // Add context if not already present
+    if (!err.location) {
+      err.location = 'generatePuppeteerAudit.mjs - Browser launch or setup'
+      err.url = puppeteerUrl
+
+      // Identify browser launch errors
+      if (err.message.includes('Failed to launch') || err.message.includes('spawn')) {
+        err.friendlyMessage = 'Failed to launch Chrome browser'
+        err.suggestion = 'Chrome installation may be corrupted or missing'
+      } else if (err.message.includes('Target closed') || err.message.includes('Session closed')) {
+        err.friendlyMessage = 'Browser closed unexpectedly during audit'
+        err.suggestion = 'This may happen with pages that trigger downloads or redirects'
+      }
+    }
+
+    throw err;
   }
 }

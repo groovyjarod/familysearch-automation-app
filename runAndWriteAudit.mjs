@@ -40,7 +40,21 @@ async function getReportData(url, testing_method, user_agent, viewport, isUsingU
     return returnData;
   } catch (err) {
     console.error(`getReportData: Error for ${url}: ${err.message}, stack: ${err.stack}`);
-    return { accessibilityScore: 0, error: err.message };
+
+    // Build comprehensive error object with all context
+    const errorObj = {
+      accessibilityScore: 0,
+      error: err.message,
+      errorLocation: err.location || 'runAndWriteAudit.mjs - getReportData',
+      previousLocation: err.previousLocation,
+      friendlyMessage: err.friendlyMessage || 'An error occurred during the audit process',
+      suggestion: err.suggestion || 'Please check the error details and try again',
+      url: err.url || url,
+      stack: err.stack,
+      timestamp: new Date().toISOString()
+    };
+
+    return errorObj;
   }
 }
 
@@ -60,13 +74,27 @@ async function main() {
       process.exit(0);
     } else {
       console.error(`main: Audit incomplete, accessibilityScore=${parsedData.accessibilityScore}, error=${parsedData.error || 'none'}`);
-      console.log(JSON.stringify({ error: 'Audit incomplete', accessibilityScore: 0 }));
+      // Pass through the full error object with all context
+      console.log(JSON.stringify(parsedData));
       process.exit(1);
     }
   } catch (err) {
     console.error(`main: Audit failed for ${url}: ${err.message}`);
     console.error(`main: Stack: ${err.stack}`);
-    console.log(JSON.stringify({ error: err.message, accessibilityScore: 0 }));
+
+    // Build comprehensive error response
+    const errorResponse = {
+      error: err.message || 'Unknown error in runAndWriteAudit.mjs',
+      errorLocation: 'runAndWriteAudit.mjs - main function',
+      friendlyMessage: 'Failed to write audit results',
+      suggestion: 'Check that the output directory is writable and disk space is available',
+      url: url,
+      stack: err.stack,
+      accessibilityScore: 0,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log(JSON.stringify(errorResponse));
     process.exit(1);
   }
 }

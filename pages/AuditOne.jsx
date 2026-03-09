@@ -293,9 +293,20 @@ const AuditOne = () => {
           setResultContents(handleAuditResult(result))
           return
         } else if (typeof result === "object" && result.error) {
-          throw new Error(`In AuditOne handleAllSizesAudit: ${result.error}`);
+          // Preserve full error object
+          const error = new Error(result.error);
+          error.errorDetails = result;
+          throw error;
         }
-        throw new Error(`In AuditOne handleAllSizesAudit: Audit failed for all: ${JSON.stringify(result)}`);
+        const unknownError = new Error('Audit failed for all sizes');
+        unknownError.errorDetails = {
+          error: 'All sizes audit failed',
+          errorLocation: 'AuditOne.jsx - handleAllSizesAudit',
+          friendlyMessage: 'All sizes audit did not complete successfully',
+          suggestion: 'Try running individual audits (Desktop or Mobile) instead of All Sizes',
+          result: result
+        };
+        throw unknownError;
       });
       setRunningStatus("finished");
       setTitleHeader("Finished Auditing All Sizes");
@@ -308,7 +319,14 @@ const AuditOne = () => {
       } else {
         setRunningStatus("error");
         setTitleHeader("Audit Error");
-        setErrorMessage(err.message || "Failed to complete all sizes audit.");
+        // Store full error object or details
+        setErrorMessage(err.errorDetails || {
+          error: err.message,
+          errorLocation: 'AuditOne.jsx - handleAllSizesAudit',
+          stack: err.stack,
+          friendlyMessage: 'Failed to complete all sizes audit',
+          suggestion: 'Check your connection and timeout settings, then try again'
+        });
       }
     }
   };
@@ -317,6 +335,7 @@ const AuditOne = () => {
     setRunningStatus("running");
     setPathName(getLastPathSegment(fullUrl));
     setTitleHeader("Auditing...");
+    setIsCancelled(false);
     try {
       const conciseTag = isConcise === "yes" ? "concise" : "full"
       const outputDirPath = 'custom-audit-results'
@@ -341,11 +360,36 @@ const AuditOne = () => {
           setResultContents(handleAuditResult(result))
           return
         } else if (typeof result === "object" && result.error) {
-          throw new Error(`AuditOne handleAudit: ${result.error}`);
+          // Preserve full error object
+          const error = new Error(result.error);
+          error.errorDetails = result;
+          throw error;
         } else if (typeof result === "object" && result.accessibilityScore === 0) {
-          throw new Error(`AuditOne handleAudit: Audit completed but accessibilityScore is 0 for ${testingMethod}`);
+          // Create detailed error object
+          const zeroScoreError = new Error('Audit completed but returned score of 0');
+          zeroScoreError.errorDetails = {
+            error: 'Audit returned accessibility score of 0',
+            errorLocation: 'AuditOne.jsx - handleAudit (result validation)',
+            friendlyMessage: 'Audit did not complete successfully',
+            suggestion: 'The page may have failed to load or timed out. Try increasing the timeout or checking your connection.',
+            testingMethod: testingMethod,
+            url: fullUrl,
+            result: result
+          };
+          throw zeroScoreError;
         }
-        throw new Error(`AuditOne handleAudit: Audit failed for ${testingMethod}: ${JSON.stringify(result)}`);
+        // Unknown result format
+        const unknownError = new Error('Audit returned unexpected result format');
+        unknownError.errorDetails = {
+          error: 'Unexpected audit result format',
+          errorLocation: 'AuditOne.jsx - handleAudit (unknown result)',
+          friendlyMessage: 'Audit produced an unexpected result',
+          suggestion: 'This is an internal error. Please try again or report this issue.',
+          testingMethod: testingMethod,
+          url: fullUrl,
+          result: JSON.stringify(result)
+        };
+        throw unknownError;
       });
       setRunningStatus("finished");
       setTitleHeader("Audit Result");
@@ -358,7 +402,14 @@ const AuditOne = () => {
       } else {
         setRunningStatus("error");
         setTitleHeader("Audit Error");
-        setErrorMessage(err.message || `Failed to audit ${fullUrl}.`);
+        // Store full error object or details
+        setErrorMessage(err.errorDetails || {
+          error: err.message,
+          errorLocation: 'AuditOne.jsx - handleAudit',
+          stack: err.stack,
+          friendlyMessage: 'Failed to complete audit',
+          suggestion: 'Check the error details and try again with different settings'
+        });
       }
     }
   };
@@ -443,29 +494,98 @@ const AuditOne = () => {
   );
 
   const ErrorScreen = () => {
-    const errorMessages = [
-      "Audit did not resolve due to timeout. Check to ensure you're using the correct user agent key, the url, and your connection, and try again.",
-      "The website you are trying to audit may require a User Agent Key. Please try again with User Agent Key set to 'Use Key', and ensure that your User Agent Key value is compatible with the website you're attempting to audit.",
-      "Lighthouse was not able to complete this audit in its allotted time. Check your timeout value, and try again.",
-      "Lighthouse was not able to complete this audit during this run. Please try again."
-    ]
-    let customErrorMessage
-    if (errorMessage.includes("did not resolve due to timeout")) customErrorMessage = errorMessages[0]
-    else if (errorMessage.includes("403")) customErrorMessage = errorMessages[1]
-    else if (errorMessage.includes("Invalid Lighthouse result")) customErrorMessage = errorMessages[2]
-    else customErrorMessage = errorMessages[3]
+    // Parse error object if it's a JSON string
+    let errorObj = errorMessage;
+    if (typeof errorMessage === 'string') {
+      try {
+        errorObj = JSON.parse(errorMessage);
+      } catch {
+        // If not JSON, treat as simple string
+        errorObj = { error: errorMessage };
+      }
+    }
+
+    // Extract error details with fallbacks
+    const friendlyMessage = errorObj.friendlyMessage || "Audit failed to complete";
+    const suggestion = errorObj.suggestion || "Please try again";
+    const errorLocation = errorObj.errorLocation || errorObj.previousLocation || "Unknown location";
+    const technicalError = errorObj.error || errorMessage;
+    const stackTrace = errorObj.stack || "No stack trace available";
+    const url = errorObj.url || fullUrl;
+
+    // Build detailed error view
+    const detailedError = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ERROR DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+URL: ${url}
+Testing Method: ${testingMethod}
+Timestamp: ${errorObj.timestamp || new Date().toISOString()}
+
+ERROR MESSAGE:
+${technicalError}
+
+ERROR LOCATION:
+${errorLocation}
+${errorObj.previousLocation ? `Previous Location: ${errorObj.previousLocation}` : ''}
+
+${errorObj.exitCode ? `Exit Code: ${errorObj.exitCode}` : ''}
+${errorObj.timeoutLimit ? `Timeout Limit: ${errorObj.timeoutLimit}` : ''}
+
+STACK TRACE:
+${stackTrace}
+
+${errorObj.lastErrorOutput ? `
+PROCESS OUTPUT (last 1000 chars):
+${errorObj.lastErrorOutput}
+` : ''}
+${errorObj.rawOutput ? `
+RAW OUTPUT (first 500 chars):
+${errorObj.rawOutput}
+` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    `.trim();
+
     return (
       <VStack {...BodyVstackCss}>
-        <h3>Audit failed for {fullUrl}.</h3>
-        <h4>{customErrorMessage}</h4>
-        <button className="btn btn-small" onClick={() => setIsViewingError(isViewingError ? false : true)}>{isViewingError ? "Hide Error" : "View Error"}</button>
-        <p style={isViewingError ? { display: 'inline' } : { display: 'none' }}>{errorMessage}</p>
+        <h3>Audit failed for {fullUrl}</h3>
+        <h4 style={{ color: '#e53e3e', fontWeight: 'bold' }}>{friendlyMessage}</h4>
+        <p style={{ maxWidth: '600px', textAlign: 'center' }}>{suggestion}</p>
+        <button
+          className="btn btn-small"
+          onClick={() => setIsViewingError(isViewingError ? false : true)}
+        >
+          {isViewingError ? "Hide Error Details" : "View Error Details"}
+        </button>
+        <pre style={
+          isViewingError
+            ? {
+                display: 'block',
+                textAlign: 'left',
+                background: '#1a1a1a',
+                color: '#00ff00',
+                padding: '15px',
+                borderRadius: '5px',
+                maxWidth: '90vw',
+                overflow: 'auto',
+                fontSize: '11px',
+                lineHeight: '1.4',
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }
+            : { display: 'none' }
+        }>
+          {detailedError}
+        </pre>
         <button className="btn btn-main" onClick={handleRunAgain}>
           Run Another Audit
         </button>
         <div className="page-spacer"></div>
       </VStack>
-  )};
+    );
+  };
 
   const CancelledScreen = () => (
     <VStack {...BodyVstackCss}>
