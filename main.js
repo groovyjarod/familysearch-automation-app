@@ -33,6 +33,35 @@ async function ensureDir(dirPath, retries = 3) {
   }
 }
 
+// Initialize settings in userData for packaged app
+async function initializeSettings() {
+  const settingsFiles = ['wikiPaths.txt', 'initialUrl.txt', 'secretUserAgent.txt'];
+
+  if (isPackaged) {
+    // In production: use userData for writable settings
+    const userDataSettings = path.join(app.getPath('userData'), 'settings');
+    await ensureDir(userDataSettings);
+
+    for (const file of settingsFiles) {
+      const userFile = path.join(userDataSettings, file);
+      const defaultFile = path.join(process.resourcesPath, 'settings', file);
+
+      // Only copy if user file doesn't exist (first launch or deleted)
+      try {
+        await fsPromise.access(userFile);
+      } catch {
+        // File doesn't exist, copy from defaults
+        try {
+          await fsPromise.copyFile(defaultFile, userFile);
+          console.log(`Initialized settings file: ${file}`);
+        } catch (err) {
+          console.error(`Failed to initialize ${file}:`, err);
+        }
+      }
+    }
+  }
+}
+
 // ------------ Update Code -----------
 
 autoUpdater.logger = require('electron-log')
@@ -132,6 +161,9 @@ process.env.PUPPETEER_EXECUTABLE_PATH = chromiumPath
 
 const activeProcesses = new Map();
 const createWindow = async () => {
+  // Initialize settings in userData before anything else
+  await initializeSettings();
+
   const allFolderPaths = ['all-audit-sizes', 'audit-results', 'old-audit-results', 'custom-audit-results']
   try {
     const auditsPath = path.join(app.getPath('documents'), 'audits')
@@ -256,7 +288,7 @@ ipcMain.handle("open-chrome", async (event, url) => {
 ipcMain.handle("get-wiki-paths", async () => {
   const basePath = isDev
     ? path.join(__dirname, 'settings', 'wikiPaths.txt')
-    : path.join(process.resourcesPath, 'settings', 'wikiPaths.txt')
+    : path.join(app.getPath('userData'), 'settings', 'wikiPaths.txt')
   const resultsRaw = await fsPromise.readFile(basePath, "utf8");
   const result = resultsRaw.split("\n").filter(Boolean);
   return result;
@@ -265,7 +297,7 @@ ipcMain.handle("get-wiki-paths", async () => {
 ipcMain.handle("get-file", async (event, filePath) => {
   const basePath = isDev
     ? path.join(__dirname, filePath)
-    : path.join(process.resourcesPath, filePath)
+    : path.join(app.getPath('userData'), filePath)
   return await fsPromise.readFile(basePath, "utf8")
 });
 
@@ -428,7 +460,7 @@ ipcMain.handle("replace-file", async (event, newData, newPath) => {
   try {
     const basePath = isDev
       ? path.join(__dirname, newPath)
-      : path.join(process.resourcesPath, newPath)
+      : path.join(app.getPath('userData'), newPath)
 
     if (typeof newData === "object") {
       const parsedNewData = newData.join("\n");
