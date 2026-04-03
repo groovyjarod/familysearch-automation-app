@@ -243,7 +243,9 @@ app.on("activate", () => {
 
 const loadFolderData = async (folderName) => {
   const entries = await fsPromise.readdir(folderName);
-  return Promise.all(entries.map(async (name) => {
+  // Filter out hidden files (.DS_Store, .gitkeep, etc.)
+  const filteredEntries = entries.filter(name => !name.startsWith('.'));
+  return Promise.all(filteredEntries.map(async (name) => {
     const fullPath = path.join(folderName, name)
     try {
       const stats = await fsPromise.stat(fullPath)
