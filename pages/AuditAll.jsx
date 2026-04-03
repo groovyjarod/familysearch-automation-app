@@ -53,6 +53,7 @@ const ReadyScreen = memo(({
           buttonClass="btn btn-small"
         />
       </HStack>
+      <p>Ensure that your initial URL is correctly set by clicking 'Edit Wiki Paths'.</p>
       <Text maxW="80%">
         Based on your computer's available memory, the recommended limit for
         concurrent tests is:
@@ -152,7 +153,6 @@ const ReadyScreen = memo(({
             <label htmlFor="mobile">Concise JSON Report</label>
           </HStack>
         </HStack>
-      <div className="page-spacer"></div>
       <button
         className="btn btn-main"
         onClick={() => commenceAllAudits(wikiPaths)}

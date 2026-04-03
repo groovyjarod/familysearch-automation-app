@@ -20,6 +20,10 @@ const ListMenu = () => {
             <LinkButton destination="./view-old-audits" buttonText="Old Audits" buttonClass="btn btn-menu btn-view" />
             <LinkButton destination="./view-custom-audits" buttonText="Single Audits" buttonClass="btn btn-menu btn-view" />
         </HStack>
+        <HStack {...CenteredHstackCss}>
+            <LinkButton destination="./view-zendesk-audits" buttonText="Zendesk Audits" buttonClass="btn btn-menu btn-view" />
+            <LinkButton destination="./view-zendesk-paths" buttonText="Zendesk Paths" buttonClass="btn btn-menu btn-view" />
+        </HStack>
     </VStack>
   )
 }

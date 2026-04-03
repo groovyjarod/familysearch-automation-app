@@ -7,10 +7,13 @@ import AuditMenu from "./pages/AuditMenu";
 import AuditAll from "./pages/AuditAll";
 import AuditOne from "./pages/AuditOne";
 import AuditTransfer from "./pages/AuditTransfer";
+import ZendeskMenu from "./pages/ZendeskMenu";
 import ListMenu from "./pages/ListMenu";
 import ListAudits from "./pages/ListAudits"
 import ListOldAudits from "./pages/ListOldAudits";
 import ListCustomAudits from "./pages/ListCustomAudits";
+import ListZendeskPaths from "./pages/ListZendeskPaths";
+import ListZendeskAudits from "./pages/ListZendeskAudits";
 import SettingsMenu from "./pages/SettingsMenu";
 import ExtensionInfo from "./pages/ExtensionInfo";
 
@@ -24,12 +27,15 @@ const App = () => {
           <Route path="test-all" element={<AuditAll />} />
           <Route path="test-single" element={<AuditOne />} />
           <Route path="test-transfer" element={<AuditTransfer />} />
+          <Route path="zendesk-menu" element={<ZendeskMenu />} />
         </Route>
         <Route path="lists-menu">
           <Route index element={<ListMenu />} />
           <Route path="view-audits" element={<ListAudits />} />
           <Route path="view-old-audits" element={<ListOldAudits />} />
           <Route path="view-custom-audits" element={<ListCustomAudits />} />
+          <Route path="view-zendesk-paths" element={<ListZendeskPaths />} />
+          <Route path="view-zendesk-audits" element={<ListZendeskAudits />} />
         </Route>
         <Route path="files-menu" element={<SettingsMenu />} />
         <Route path="extension-menu" element={<ExtensionInfo />} />

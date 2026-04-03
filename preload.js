@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getWikiPathsData: () => ipcRenderer.invoke("get-wiki-paths"),
   getOldAudits: () => ipcRenderer.invoke("read-old-audit-folder"),
   openChromeUrl: (url) => ipcRenderer.invoke("open-chrome", url),
-  moveAuditFiles: () => ipcRenderer.invoke("move-audit-files"),
+  moveAuditFiles: (fromFolderName, toFolderName) => ipcRenderer.invoke("move-audit-files", fromFolderName, toFolderName),
   openResultsFile: (filename, folder) =>
     ipcRenderer.invoke("open-results-file", filename, folder),
   replaceFile: (newData, newPath, isWikiPaths = false) =>
@@ -57,6 +57,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("save-file", filePath, fileContent),
   onLighthouseLog: (callback) =>
     ipcRenderer.on("lighthouse-log", (event, message) => callback(message)),
+  zendeskLogin: (loginId, password, isViewingAudit, loadingTime) =>
+    ipcRenderer.invoke("zendesk-login", loginId, password, isViewingAudit, loadingTime),
+  zendeskScrape: (loginId, password, zendeskUrl, isViewingAudit, loadingTime) =>
+    ipcRenderer.invoke("zendesk-scrape", loginId, password, zendeskUrl, isViewingAudit, loadingTime),
+  zendeskConcurrentAudit: (loginId, password, zendeskUrl, isViewingAudit, loadingTime, concurrency) =>
+    ipcRenderer.invoke("zendesk-concurrent-audit", loginId, password, zendeskUrl, isViewingAudit, loadingTime, concurrency),
+  zendeskRetryFailedAudits: (loginId, password, zendeskUrl, failedUrls, isViewingAudit, loadingTime, concurrency) =>
+    ipcRenderer.invoke("zendesk-retry-failed-audits", loginId, password, zendeskUrl, failedUrls, isViewingAudit, loadingTime, concurrency),
+  getZendeskPaths: () => ipcRenderer.invoke("read-zendesk-paths"),
+  getZendeskAuditResults: () => ipcRenderer.invoke("read-zendesk-audit-results"),
+  getZendeskPathLineCount: (filename) => ipcRenderer.invoke("get-zendesk-path-line-count", filename),
+  checkNode: () => ipcRenderer.invoke("check-node"),
 });
 
 console.log("preload script loaded.");

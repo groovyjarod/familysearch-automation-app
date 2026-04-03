@@ -69,8 +69,8 @@ async function main() {
       await ensureDir(outputDir);
       await fs.writeFile(outputFile, JSON.stringify(parsedData, null, 2), 'utf8');
       console.error('main: Audit complete, sending result to parent process');
-      // Output ONLY the JSON result to stdout for parent to parse
-      console.log(JSON.stringify(parsedData));
+      // Send success indicator instead of full JSON (prevents stdout truncation for large audits)
+      console.log(JSON.stringify({ success: true, accessibilityScore: parsedData.accessibilityScore, outputFile }));
       process.exit(0);
     } else {
       console.error(`main: Audit incomplete, accessibilityScore=${parsedData.accessibilityScore}, error=${parsedData.error || 'none'}`);
