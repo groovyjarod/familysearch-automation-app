@@ -160,13 +160,17 @@ process.env.PUPPETEER_EXECUTABLE_PATH = chromiumPath
 // ------------ Window-handling code ------------
 
 const activeProcesses = new Map();
+const cancelledSessions = new Set();
+const activeSessions = new Set(); // Track currently running audit sessions
 const createWindow = async () => {
   // Initialize settings in userData before anything else
   await initializeSettings();
 
   const allFolderPaths = ['all-audit-sizes', 'audit-results', 'old-audit-results', 'custom-audit-results']
   try {
-    const auditsPath = path.join(app.getPath('documents'), 'audits')
+    const auditsPath = isDev
+      ? path.join(__dirname, 'audits')
+      : path.join(app.getPath('documents'), 'audits')
     await ensureDir(auditsPath)
     for (let folderPath of allFolderPaths) {
       const newAuditPath = path.join(auditsPath, folderPath)
@@ -426,11 +430,9 @@ ipcMain.handle("save-file", async (event, filePath, fileContent) => {
     ? path.join(__dirname, "audits", filePath)
     : path.join(app.getPath('documents'), "audits", filePath)
   try {
-    // Create directory before writing file to prevent ENOENT errors
     const outputDir = path.dirname(outputPath);
     await ensureDir(outputDir);
 
-    // Use async writeFile instead of sync
     await fsPromise.writeFile(
       outputPath,
       JSON.stringify(fileContent, null, 2),
@@ -549,19 +551,50 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
         BrowserWindow.getAllWindows()[0].webContents.send('puppeteer-error-1', error)
       });
 
-      child.on("close", (code) => {
+      child.on("close", async (code) => {
         clearTimeout(timeoutId);
         activeProcesses.delete(processId)
         console.log(`[AUDIT COMPLETE] Process ${processId} exited with code ${code} for ${urlPath}`);
         if (code === 0) {
           try {
-            const result = JSON.parse(output.trim());
-            if (result.accessibilityScore > 0) {
-              console.log(`[AUDIT SUCCESS] Score: ${result.accessibilityScore} for ${urlPath}`);
-            } else {
-              console.error(`[AUDIT FAILED] Score: 0 for ${urlPath}`);
+            const response = JSON.parse(output.trim());
+
+            // Check if this is a success indicator (new format)
+            if (response.success && response.outputFile) {
+              console.log(`[AUDIT SUCCESS] Score: ${response.accessibilityScore} for ${urlPath}, reading from file...`);
+
+              try {
+                // Read the full audit result from the file to avoid stdout truncation
+                const fileContent = await fsPromise.readFile(customOutputPath, 'utf8');
+                const result = JSON.parse(fileContent);
+                console.log(`[AUDIT FILE READ] Successfully loaded ${urlPath} from ${customOutputPath}`);
+                resolve(result);
+              } catch (fileErr) {
+                console.error('[AUDIT ERROR] Failed to read audit file:', fileErr.message);
+                const fileReadError = {
+                  error: `Failed to read audit file: ${fileErr.message}`,
+                  errorLocation: 'main.js - get-spawn handler (file read)',
+                  friendlyMessage: 'Audit completed but could not read results file',
+                  suggestion: 'The audit file may be locked or corrupted. Try running the audit again.',
+                  url: urlPath,
+                  stack: fileErr.stack,
+                  accessibilityScore: 0
+                };
+                resolve(fileReadError);
+              }
             }
-            resolve(result);
+            // Legacy format or error response with full JSON
+            else if (response.accessibilityScore !== undefined) {
+              if (response.accessibilityScore > 0) {
+                console.log(`[AUDIT SUCCESS] Score: ${response.accessibilityScore} for ${urlPath}`);
+              } else {
+                console.error(`[AUDIT FAILED] Score: 0 for ${urlPath}`);
+              }
+              resolve(response);
+            }
+            else {
+              throw new Error('Unexpected response format from audit process');
+            }
           } catch (err) {
             console.error('[AUDIT ERROR] Failed to parse JSON output:', err.message);
             console.error('[AUDIT ERROR] Raw output:', output.substring(0, 200));
@@ -594,6 +627,8 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
             }
           } catch (parseErr) {
             // If we can't parse, create our own error object
+            console.error('[AUDIT FAILED] Could not parse error response from child process:', parseErr.message);
+            console.error('[AUDIT FAILED] Raw output:', output.substring(0, 300));
           }
 
           const exitError = {
@@ -675,9 +710,16 @@ ipcMain.handle("get-spawn", async (event, urlPath, outputDirPath, outputFilePath
 
 ipcMain.handle("cancel-audit", async () => {
   try {
+    // Kill all active child processes
     for (const [id, process] of activeProcesses) {
       process.kill("SIGTERM");
       activeProcesses.delete(id);
+    }
+
+    // Mark all active sessions as cancelled to prevent new processes from starting
+    for (const sessionId of activeSessions) {
+      cancelledSessions.add(sessionId);
+      console.log(`[CANCEL] Marked session ${sessionId} as cancelled`);
     }
 
     const folderPath = "./audits/all-audit-sizes";
@@ -699,13 +741,13 @@ ipcMain.handle("cancel-audit", async () => {
   }
 });
 
-ipcMain.handle("move-audit-files", async () => {
+ipcMain.handle("move-audit-files", async (event, fromFolderName, toFolderName) => {
   const sourceDir = isDev
-    ? path.join(__dirname, "audits", "audit-results")
-    : path.join(app.getPath('documents'), "audits", "audit-results");
+    ? path.join(__dirname, "audits", fromFolderName)
+    : path.join(app.getPath('documents'), "audits", fromFolderName);
   const destinationDir = isDev
-    ? path.join(__dirname, "audits", "old-audit-results")
-    : path.join(app.getPath('documents'), "audits", "old-audit-results");
+    ? path.join(__dirname, "audits", toFolderName)
+    : path.join(app.getPath('documents'), "audits", toFolderName);
 
   const limit = pLimitDefault(5);
 
@@ -715,27 +757,27 @@ ipcMain.handle("move-audit-files", async () => {
 
     const existingFiles = await fsPromise.readdir(destinationDir);
     await Promise.all(
-      existingFiles.map((file) => {
+      existingFiles.map((file) =>
         limit(() =>
           fsPromise.rm(path.join(destinationDir, file), {
             recursive: true,
             force: true,
           })
-        );
-      })
+        )
+      )
     );
 
     const filesToMove = await fsPromise.readdir(sourceDir);
     await Promise.all(
-      filesToMove.map(async (file) => {
+      filesToMove.map((file) =>
         limit(async () => {
           const sourcePath = path.join(sourceDir, file);
           const destinationPath = path.join(destinationDir, file);
 
           await fsPromise.copyFile(sourcePath, destinationPath);
           await fsPromise.rm(sourcePath);
-        });
-      })
+        })
+      )
     );
 
     return { success: true, message: "Files moved successfully." };
@@ -773,3 +815,1084 @@ ipcMain.handle("clear-all-sized-audits-folder", async () => {
 });
 
 ipcMain.handle("get-p-limit", async () => pLimit);
+
+ipcMain.handle("zendesk-login", async (_event, loginId, password, isViewingAudit, loadingTime) => {
+  let output = "";
+  let errorOutput = "";
+
+  const scriptPath = isDev
+    ? path.join(__dirname, "runZendeskLogin.mjs")
+    : path.join(process.resourcesPath, 'app', "runZendeskLogin.mjs");
+
+  const processId = `zendesk-login-${Date.now()}`;
+  console.log(`[ZENDESK LOGIN START] Process ID: ${processId}`);
+
+  const spawnPromise = new Promise((resolve) => {
+    const child = child_process.spawn(
+      nodeBinary,
+      [
+        scriptPath,
+        loginId,
+        password,
+        isViewingAudit,
+        loadingTime
+      ],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+        cwd: isDev ? process.cwd() : path.join(process.resourcesPath, 'app'),
+        env: {
+          ...process.env,
+          NODE_PATH: isDev
+            ? path.join(__dirname, 'node_modules')
+            : path.join(process.resourcesPath, 'app', 'node_modules'),
+          PUPPETEER_EXECUTABLE_PATH: chromiumPath,
+          AUDIT_OUTPUT_DIR: isDev
+            ? path.join(__dirname, 'audits', 'custom-audit-results')
+            : path.join(app.getPath('documents'), 'audits', 'custom-audit-results')
+        }
+      }
+    );
+
+    activeProcesses.set(processId, child);
+
+    child.stdout.on("data", (data) => {
+      const log = data.toString();
+      output += log;
+      BrowserWindow.getAllWindows()[0].webContents.send('zendesk-log', log);
+    });
+
+    child.stderr.on("data", (data) => {
+      const error = data.toString();
+      errorOutput += error;
+      console.error('[ZENDESK LOGIN LOG]:', error.trim());
+      BrowserWindow.getAllWindows()[0].webContents.send('zendesk-error-log', error);
+    });
+
+    child.on("close", (code) => {
+      activeProcesses.delete(processId);
+      console.log(`[ZENDESK LOGIN COMPLETE] Process ${processId} exited with code ${code}`);
+
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output.trim());
+          console.log(`[ZENDESK LOGIN SUCCESS] Result:`, result);
+          resolve(result);
+        } catch (err) {
+          console.error('[ZENDESK LOGIN ERROR] Failed to parse JSON output:', err.message);
+          console.error('[ZENDESK LOGIN ERROR] Raw output:', output.substring(0, 200));
+
+          const parseError = {
+            success: false,
+            error: `Failed to parse login result: ${err.message}`,
+            errorLocation: 'main.js - zendesk-login handler (JSON parsing)',
+            friendlyMessage: 'Could not read login results',
+            suggestion: 'The login process may have produced invalid output. Check console logs.',
+            stack: err.stack,
+            rawOutput: output.substring(0, 500)
+          };
+
+          resolve(parseError);
+        }
+      } else {
+        console.error(`[ZENDESK LOGIN FAILED] Process exited with code ${code}`);
+        console.error('[ZENDESK LOGIN FAILED] Last error output:', errorOutput.substring(errorOutput.length - 500));
+
+        try {
+          const errorResult = JSON.parse(output.trim());
+          if (errorResult.error) {
+            console.error('[ZENDESK LOGIN FAILED] Structured error from child:', errorResult.error);
+            resolve(errorResult);
+            return;
+          }
+        } catch (parseErr) {
+          // If we can't parse, create our own error object
+        }
+
+        const exitError = {
+          success: false,
+          error: `Login process failed with exit code ${code}`,
+          errorLocation: 'main.js - zendesk-login handler (child process exit)',
+          friendlyMessage: 'Login process crashed or failed to complete',
+          suggestion: 'Check the error logs for details. This may indicate incorrect credentials or a Chrome crash.',
+          exitCode: code,
+          lastErrorOutput: errorOutput.substring(errorOutput.length - 1000)
+        };
+
+        resolve(exitError);
+      }
+    });
+
+    child.on("error", (err) => {
+      activeProcesses.delete(processId);
+      console.error('[ZENDESK LOGIN ERROR] Process error:', err.message);
+      BrowserWindow.getAllWindows()[0].webContents.send('zendesk-error', err);
+
+      const processError = {
+        success: false,
+        error: `Failed to spawn login process: ${err.message}`,
+        errorLocation: 'main.js - zendesk-login handler (process spawn error)',
+        friendlyMessage: 'Could not start the login process',
+        suggestion: 'This may indicate a problem with Node.js or system permissions. Try restarting the app.',
+        stack: err.stack
+      };
+
+      resolve(processError);
+    });
+  });
+
+  return spawnPromise;
+});
+
+ipcMain.handle("zendesk-scrape", async (_event, loginId, password, zendeskUrl, isViewingAudit, loadingTime) => {
+  let output = "";
+  let errorOutput = "";
+
+  const scriptPath = isDev
+    ? path.join(__dirname, "runZendeskScrape.mjs")
+    : path.join(process.resourcesPath, 'app', "runZendeskScrape.mjs");
+
+  const processId = `zendesk-scrape-${Date.now()}`;
+  console.log(`[ZENDESK SCRAPE START] Process ID: ${processId}`);
+
+  const spawnPromise = new Promise((resolve) => {
+    const child = child_process.spawn(
+      nodeBinary,
+      [
+        scriptPath,
+        loginId,
+        password,
+        zendeskUrl,
+        isViewingAudit,
+        loadingTime
+      ],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+        cwd: isDev ? process.cwd() : path.join(process.resourcesPath, 'app'),
+        env: {
+          ...process.env,
+          NODE_PATH: isDev
+            ? path.join(__dirname, 'node_modules')
+            : path.join(process.resourcesPath, 'app', 'node_modules'),
+          PUPPETEER_EXECUTABLE_PATH: chromiumPath,
+          AUDIT_OUTPUT_DIR: isDev
+            ? path.join(__dirname, 'audits', 'custom-audit-results')
+            : path.join(app.getPath('documents'), 'audits', 'custom-audit-results')
+        }
+      }
+    );
+
+    activeProcesses.set(processId, child);
+
+    child.stdout.on("data", (data) => {
+      const log = data.toString();
+      output += log;
+    });
+
+    child.stderr.on("data", (data) => {
+      const error = data.toString();
+      errorOutput += error;
+      console.error('[ZENDESK SCRAPE LOG]:', error.trim());
+    });
+
+    child.on("close", (code) => {
+      activeProcesses.delete(processId);
+      console.log(`[ZENDESK SCRAPE COMPLETE] Process ${processId} exited with code ${code}`);
+
+      if (code === 0) {
+        try {
+          const result = JSON.parse(output.trim());
+          console.log(`[ZENDESK SCRAPE SUCCESS] Result:`, result);
+          resolve(result);
+        } catch (err) {
+          console.error('[ZENDESK SCRAPE ERROR] Failed to parse JSON output:', err.message);
+          resolve({
+            success: false,
+            error: `Failed to parse scraping result: ${err.message}`
+          });
+        }
+      } else {
+        console.error(`[ZENDESK SCRAPE FAILED] Process exited with code ${code}`);
+        resolve({
+          success: false,
+          error: `Scraping process failed with exit code ${code}`,
+          lastErrorOutput: errorOutput.substring(errorOutput.length - 1000)
+        });
+      }
+    });
+
+    child.on("error", (err) => {
+      activeProcesses.delete(processId);
+      console.error('[ZENDESK SCRAPE ERROR] Process error:', err.message);
+      resolve({
+        success: false,
+        error: `Failed to spawn scraping process: ${err.message}`
+      });
+    });
+  });
+
+  return spawnPromise;
+});
+
+ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zendeskUrl, isViewingAudit, loadingTime, concurrency) => {
+  const puppeteer = (await import('puppeteer')).default;
+
+  // Generate unique session ID for this audit run
+  const sessionId = `zendesk-session-${Date.now()}`;
+  console.log(`[ZENDESK AUDIT] Starting session: ${sessionId}`);
+
+  const scriptPath = isDev
+    ? path.join(__dirname, "runZendeskSingleAuditWithCookies.mjs")
+    : path.join(process.resourcesPath, 'app', "runZendeskSingleAuditWithCookies.mjs");
+
+  // Read wikiPaths.txt to get URLs to audit
+  const settingsDir = isDev
+    ? path.join(__dirname, 'settings')
+    : path.join(app.getPath('userData'), 'settings');
+
+  const wikiPathsFile = path.join(settingsDir, 'wikiPaths.txt');
+
+  let urlsToAudit = [];
+  try {
+    const pathsContent = await fsPromise.readFile(wikiPathsFile, 'utf8');
+    const paths = pathsContent.split('\n').filter(p => p.trim());
+
+    // Build full URLs from paths
+    const baseUrl = zendeskUrl.endsWith('/') ? zendeskUrl.slice(0, -1) : zendeskUrl;
+    urlsToAudit = paths.map(p => {
+      const cleanPath = p.startsWith('/') ? p : '/' + p;
+      return baseUrl + cleanPath;
+    });
+  } catch (err) {
+    console.error('[ZENDESK AUDIT] Failed to read wikiPaths.txt:', err.message);
+    return {
+      success: false,
+      error: `Failed to read wikiPaths.txt: ${err.message}`,
+      friendlyMessage: 'Could not find paths to audit',
+      suggestion: 'Make sure wikiPaths.txt exists in the settings folder'
+    };
+  }
+
+  if (urlsToAudit.length === 0) {
+    return {
+      success: false,
+      error: 'No URLs found in wikiPaths.txt',
+      friendlyMessage: 'No paths to audit',
+      suggestion: 'Add paths to wikiPaths.txt in the settings'
+    };
+  }
+
+  console.log(`[ZENDESK AUDIT] Found ${urlsToAudit.length} URLs to audit with concurrency ${concurrency}`);
+
+  // === STEP 1: Login once and save cookies ===
+  const LOADING_TIME = parseInt(loadingTime) * 1000;
+  const viewport = { width: 1920, height: 1080 };
+  const EXPLICIT_PORT = 9222 + (process.pid % 1000);
+
+  let browser;
+  const puppeteerArgs = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    `--remote-debugging-port=${EXPLICIT_PORT}`,
+    '--remote-allow-origins=*',
+    '--disable-dev-shm-usage',
+    '--disable-extensions',
+    '--disable-default-apps',
+    '--disable-background-networking',
+    '--disable-sync',
+    '--disable-translate',
+    '--disable-features=AudioServiceOutOfProcess,Translate,BackForwardCache',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-breakpad',
+    '--disable-component-extensions-with-background-pages',
+    '--disable-ipc-flooding-protection',
+    '--disable-renderer-backgrounding',
+    '--mute-audio',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--metrics-recording-only',
+    '--disable-hang-monitor',
+    '--disable-prompt-on-repost',
+    '--disable-domain-reliability',
+    '--disable-component-update'
+  ];
+
+  const puppeteerConfig = {
+    executablePath: chromiumPath,
+    headless: isViewingAudit === "no",
+    args: puppeteerArgs,
+  };
+
+  try {
+    // Track this session as active
+    activeSessions.add(sessionId);
+    console.log('[ZENDESK AUDIT] Step 1: Performing login to save cookies...');
+    browser = await puppeteer.launch(puppeteerConfig);
+
+    const loginPage = await browser.newPage();
+    await loginPage.setViewport(viewport);
+    loginPage.setDefaultNavigationTimeout(LOADING_TIME);
+    loginPage.setDefaultTimeout(LOADING_TIME);
+
+    console.log(`[ZENDESK AUDIT] Navigating to ${zendeskUrl} for login...`);
+    await loginPage.goto(zendeskUrl, {
+      waitUntil: 'networkidle2',
+      timeout: LOADING_TIME
+    });
+
+    // Login flow
+    const loginIdSelectors = [
+      'input[type="email"]',
+      'input[name="user[email]"]',
+      'input[id="user_email"]',
+      '#email',
+      'input[name="email"]',
+      'input[type="text"]'
+    ];
+
+    let loginIdInput = null;
+    for (const selector of loginIdSelectors) {
+      try {
+        await loginPage.waitForSelector(selector, { timeout: 5000 });
+        loginIdInput = selector;
+        console.log(`[ZENDESK AUDIT] Found login ID input: ${selector}`);
+        break;
+      } catch (err) {
+        // Try next selector
+      }
+    }
+
+    if (!loginIdInput) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Could not find login ID input field',
+        friendlyMessage: 'Login form not found',
+        suggestion: 'Verify the URL is correct and the page loaded properly'
+      };
+    }
+
+    await loginPage.type(loginIdInput, loginId);
+    console.log('[ZENDESK AUDIT] Login ID entered');
+
+    const passwordSelectors = [
+      'input[type="password"]',
+      'input[name="user[password]"]',
+      'input[id="user_password"]',
+      '#password',
+      'input[name="password"]'
+    ];
+
+    let passwordInput = null;
+    for (const selector of passwordSelectors) {
+      try {
+        await loginPage.waitForSelector(selector, { timeout: 3000 });
+        passwordInput = selector;
+        console.log(`[ZENDESK AUDIT] Found password input: ${selector}`);
+        break;
+      } catch (err) {
+        // Try next selector
+      }
+    }
+
+    if (!passwordInput) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Could not find password input field',
+        friendlyMessage: 'Password field not found',
+        suggestion: 'Login form may have changed structure'
+      };
+    }
+
+    await loginPage.type(passwordInput, password);
+    console.log('[ZENDESK AUDIT] Password entered');
+
+    const signInSelectors = [
+      'button[type="submit"]',
+      'input[type="submit"]',
+      'button:has-text("Sign in")',
+      'input[value="Sign in"]',
+      '.submit',
+      '#submit'
+    ];
+
+    let signInButton = null;
+    for (const selector of signInSelectors) {
+      try {
+        await loginPage.waitForSelector(selector, { timeout: 3000 });
+        signInButton = selector;
+        console.log(`[ZENDESK AUDIT] Found sign in button: ${selector}`);
+        break;
+      } catch (err) {
+        // Try next selector
+      }
+    }
+
+    if (!signInButton) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Could not find Sign in button',
+        friendlyMessage: 'Sign in button not found',
+        suggestion: 'Login form may have changed structure'
+      };
+    }
+
+    await loginPage.click(signInButton);
+    console.log('[ZENDESK AUDIT] Sign in button clicked. Waiting for 2FA...');
+
+    // Wait for navigation to complete (includes 2FA)
+    const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
+    let navigationComplete = false;
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    while (!navigationComplete && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+      const currentUrl = loginPage.url();
+      console.log(`[ZENDESK AUDIT] Login attempt ${attempts}: ${currentUrl}`);
+
+      if (targetUrlPattern.test(currentUrl)) {
+        navigationComplete = true;
+        console.log('[ZENDESK AUDIT] Successfully logged in!');
+      }
+    }
+
+    if (!navigationComplete) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Failed to complete login within timeout',
+        friendlyMessage: '2FA timeout or login failed',
+        suggestion: 'Ensure 2FA code is entered quickly or increase timeout'
+      };
+    }
+
+    // Wait for session to establish
+    console.log('[ZENDESK AUDIT] Waiting 3 seconds for session to establish...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Save cookies to temporary file
+    const cookies = await loginPage.cookies();
+    console.log(`[ZENDESK AUDIT] Retrieved ${cookies.length} cookies from authenticated session`);
+
+    const tempDir = isDev
+      ? path.join(__dirname, 'temp')
+      : path.join(app.getPath('userData'), 'temp');
+    await fsPromise.mkdir(tempDir, { recursive: true });
+
+    const cookieFilePath = path.join(tempDir, `zendesk-cookies-${Date.now()}.json`);
+    await fsPromise.writeFile(cookieFilePath, JSON.stringify(cookies, null, 2), 'utf8');
+    console.log(`[ZENDESK AUDIT] Cookies saved to: ${cookieFilePath}`);
+
+    // Close login browser
+    await browser.close();
+    console.log('[ZENDESK AUDIT] Login browser closed. Starting concurrent audits...');
+
+    // === STEP 2: Spawn concurrent audits with saved cookies ===
+    const outputDir = isDev
+      ? path.join(__dirname, 'audits', 'zendesk-audit-results')
+      : path.join(app.getPath('documents'), 'audits', 'zendesk-audit-results');
+
+    await fsPromise.mkdir(outputDir, { recursive: true });
+
+    // Import p-limit dynamically
+    const pLimit = (await import('p-limit')).default;
+    const limit = pLimit(parseInt(concurrency) || 1);
+
+    const results = [];
+    const failedAudits = [];
+
+    // Helper function to spawn a single audit process with cookies
+    const spawnSingleAudit = (url, index) => {
+      return new Promise((resolve) => {
+        // Check if this session has been cancelled
+        if (cancelledSessions.has(sessionId)) {
+          console.log(`[ZENDESK AUDIT ${index + 1}/${urlsToAudit.length}] Skipped (cancelled): ${url}`);
+          resolve({
+            success: false,
+            url,
+            error: 'Audit cancelled by user',
+            accessibilityScore: 0,
+            cancelled: true
+          });
+          return;
+        }
+
+        const urlPath = new URL(url).pathname.replace(/^\//, '').replace(/\//g, '-') || 'home';
+        const filename = `${urlPath}-zendesk.json`;
+        const outputFile = path.join(outputDir, filename);
+
+        const processId = `zendesk-audit-${Date.now()}-${index}`;
+        let output = "";
+        let errorOutput = "";
+
+        console.log(`[ZENDESK AUDIT ${index + 1}/${urlsToAudit.length}] Starting: ${url}`);
+
+        const child = child_process.spawn(
+          nodeBinary,
+          [
+            scriptPath,
+            cookieFilePath, // Pass cookie file path
+            url, // URL to audit
+            outputFile,
+            loadingTime,
+            isViewingAudit
+          ],
+          {
+            stdio: ["ignore", "pipe", "pipe"],
+            cwd: isDev ? process.cwd() : path.join(process.resourcesPath, 'app'),
+            env: {
+              ...process.env,
+              NODE_PATH: isDev
+                ? path.join(__dirname, 'node_modules')
+                : path.join(process.resourcesPath, 'app', 'node_modules'),
+              PUPPETEER_EXECUTABLE_PATH: chromiumPath,
+              AUDIT_OUTPUT_DIR: outputDir
+            }
+          }
+        );
+
+        activeProcesses.set(processId, child);
+
+        child.stdout.on("data", (data) => {
+          output += data.toString();
+        });
+
+        child.stderr.on("data", (data) => {
+          errorOutput += data.toString();
+          console.error(`[ZENDESK AUDIT ${index + 1}]:`, data.toString().trim());
+        });
+
+        child.on("close", (code) => {
+          activeProcesses.delete(processId);
+
+          if (code === 0) {
+            try {
+              const result = JSON.parse(output.trim());
+              console.log(`[ZENDESK AUDIT ${index + 1}] Success: ${url} (Score: ${result.accessibilityScore})`);
+              resolve({
+                success: true,
+                url,
+                accessibilityScore: result.accessibilityScore,
+                filename
+              });
+            } catch (err) {
+              console.error(`[ZENDESK AUDIT ${index + 1}] Parse error:`, err.message);
+              resolve({
+                success: false,
+                url,
+                error: `Failed to parse result: ${err.message}`,
+                accessibilityScore: 0
+              });
+            }
+          } else {
+            console.error(`[ZENDESK AUDIT ${index + 1}] Failed with code ${code}: ${url}`);
+            let errorMessage = 'Audit process failed';
+            try {
+              const errorResult = JSON.parse(output.trim());
+              errorMessage = errorResult.error || errorMessage;
+            } catch (e) {
+              // Use default error message
+            }
+            resolve({
+              success: false,
+              url,
+              error: errorMessage,
+              accessibilityScore: 0
+            });
+          }
+        });
+
+        child.on("error", (err) => {
+          activeProcesses.delete(processId);
+          console.error(`[ZENDESK AUDIT ${index + 1}] Process error:`, err.message);
+          resolve({
+            success: false,
+            url,
+            error: `Failed to spawn: ${err.message}`,
+            accessibilityScore: 0
+          });
+        });
+      });
+    };
+
+    // Run all audits with concurrency control
+    const auditPromises = urlsToAudit.map((url, index) => {
+      return limit(() => spawnSingleAudit(url, index).then(result => {
+        results.push(result);
+        if (!result.success) {
+          failedAudits.push({ url, error: result.error });
+        }
+        console.log(`[ZENDESK AUDIT] Progress: ${results.length}/${urlsToAudit.length}`);
+        return result;
+      }));
+    });
+
+    await Promise.all(auditPromises);
+
+    // Clean up cookie file
+    try {
+      await fsPromise.unlink(cookieFilePath);
+      console.log('[ZENDESK AUDIT] Cookie file cleaned up');
+    } catch (err) {
+      console.warn('[ZENDESK AUDIT] Failed to delete cookie file:', err.message);
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`[ZENDESK AUDIT] Complete: ${successCount}/${urlsToAudit.length} successful`);
+
+    // Clean up session tracking
+    activeSessions.delete(sessionId);
+    cancelledSessions.delete(sessionId);
+    console.log(`[ZENDESK AUDIT] Session ${sessionId} cleaned up`);
+
+    return {
+      success: true,
+      message: `Completed ${urlsToAudit.length} audits (${successCount} successful, ${failedAudits.length} failed)`,
+      totalAudits: urlsToAudit.length,
+      successfulAudits: successCount,
+      failedAudits: failedAudits,
+      results: results,
+      outputDir: outputDir
+    };
+
+  } catch (err) {
+    console.error('[ZENDESK AUDIT] Error during login or audit:', err.message);
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+
+    // Clean up session tracking on error
+    activeSessions.delete(sessionId);
+    cancelledSessions.delete(sessionId);
+
+    return {
+      success: false,
+      error: err.message,
+      friendlyMessage: 'Login or audit process failed',
+      suggestion: 'Check credentials and network connection'
+    };
+  }
+});
+
+ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, zendeskUrl, failedUrls, isViewingAudit, loadingTime, concurrency) => {
+  // Use the same cookie-based approach as the main audit handler
+  const puppeteer = (await import('puppeteer')).default;
+
+  // Generate unique session ID for this retry run
+  const sessionId = `zendesk-retry-${Date.now()}`;
+  console.log(`[ZENDESK RETRY] Starting session: ${sessionId}`);
+
+  const scriptPath = isDev
+    ? path.join(__dirname, "runZendeskSingleAuditWithCookies.mjs")
+    : path.join(process.resourcesPath, 'app', "runZendeskSingleAuditWithCookies.mjs");
+
+  console.log(`[ZENDESK RETRY] Retrying ${failedUrls.length} failed audits with concurrency ${concurrency}`);
+
+  // === STEP 1: Login once and save cookies ===
+  const LOADING_TIME = parseInt(loadingTime) * 1000;
+  const viewport = { width: 1920, height: 1080 };
+  const EXPLICIT_PORT = 9222 + (process.pid % 1000);
+
+  let browser;
+  const puppeteerArgs = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    `--remote-debugging-port=${EXPLICIT_PORT}`,
+    '--remote-allow-origins=*',
+    '--disable-dev-shm-usage',
+    '--disable-extensions',
+    '--disable-default-apps',
+    '--disable-background-networking',
+    '--disable-sync',
+    '--disable-translate',
+    '--disable-features=AudioServiceOutOfProcess,Translate,BackForwardCache',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-breakpad',
+    '--disable-component-extensions-with-background-pages',
+    '--disable-ipc-flooding-protection',
+    '--disable-renderer-backgrounding',
+    '--mute-audio',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--metrics-recording-only',
+    '--disable-hang-monitor',
+    '--disable-prompt-on-repost',
+    '--disable-domain-reliability',
+    '--disable-component-update'
+  ];
+
+  const puppeteerConfig = {
+    executablePath: chromiumPath,
+    headless: isViewingAudit === "no",
+    args: puppeteerArgs,
+  };
+
+  try {
+    // Track this session as active
+    activeSessions.add(sessionId);
+    console.log('[ZENDESK RETRY] Step 1: Performing login to save cookies...');
+    browser = await puppeteer.launch(puppeteerConfig);
+
+    const loginPage = await browser.newPage();
+    await loginPage.setViewport(viewport);
+    loginPage.setDefaultNavigationTimeout(LOADING_TIME);
+    loginPage.setDefaultTimeout(LOADING_TIME);
+
+    console.log(`[ZENDESK RETRY] Navigating to ${zendeskUrl} for login...`);
+    await loginPage.goto(zendeskUrl, {
+      waitUntil: 'networkidle2',
+      timeout: LOADING_TIME
+    });
+
+    // Login flow (same as main audit)
+    const loginIdSelectors = [
+      'input[type="email"]',
+      'input[name="user[email]"]',
+      'input[id="user_email"]',
+      '#email',
+      'input[name="email"]',
+      'input[type="text"]'
+    ];
+
+    let loginIdInput = null;
+    for (const selector of loginIdSelectors) {
+      try {
+        await loginPage.waitForSelector(selector, { timeout: 5000 });
+        loginIdInput = selector;
+        break;
+      } catch (err) {
+        // Try next selector
+      }
+    }
+
+    if (!loginIdInput) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Could not find login ID input field'
+      };
+    }
+
+    await loginPage.type(loginIdInput, loginId);
+
+    const passwordSelectors = [
+      'input[type="password"]',
+      'input[name="user[password]"]',
+      'input[id="user_password"]',
+      '#password',
+      'input[name="password"]'
+    ];
+
+    let passwordInput = null;
+    for (const selector of passwordSelectors) {
+      try {
+        await loginPage.waitForSelector(selector, { timeout: 3000 });
+        passwordInput = selector;
+        break;
+      } catch (err) {
+        // Try next selector
+      }
+    }
+
+    if (!passwordInput) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Could not find password input field'
+      };
+    }
+
+    await loginPage.type(passwordInput, password);
+
+    const signInSelectors = [
+      'button[type="submit"]',
+      'input[type="submit"]',
+      'button:has-text("Sign in")',
+      'input[value="Sign in"]',
+      '.submit',
+      '#submit'
+    ];
+
+    let signInButton = null;
+    for (const selector of signInSelectors) {
+      try {
+        await loginPage.waitForSelector(selector, { timeout: 3000 });
+        signInButton = selector;
+        break;
+      } catch (err) {
+        // Try next selector
+      }
+    }
+
+    if (!signInButton) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Could not find Sign in button'
+      };
+    }
+
+    await loginPage.click(signInButton);
+    console.log('[ZENDESK RETRY] Sign in button clicked. Waiting for 2FA...');
+
+    // Wait for navigation
+    const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
+    let navigationComplete = false;
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    while (!navigationComplete && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+      const currentUrl = loginPage.url();
+
+      if (targetUrlPattern.test(currentUrl)) {
+        navigationComplete = true;
+        console.log('[ZENDESK RETRY] Successfully logged in!');
+      }
+    }
+
+    if (!navigationComplete) {
+      await browser.close();
+      return {
+        success: false,
+        error: 'Failed to complete login within timeout'
+      };
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Save cookies
+    const cookies = await loginPage.cookies();
+    console.log(`[ZENDESK RETRY] Retrieved ${cookies.length} cookies`);
+
+    const tempDir = isDev
+      ? path.join(__dirname, 'temp')
+      : path.join(app.getPath('userData'), 'temp');
+    await fsPromise.mkdir(tempDir, { recursive: true });
+
+    const cookieFilePath = path.join(tempDir, `zendesk-retry-cookies-${Date.now()}.json`);
+    await fsPromise.writeFile(cookieFilePath, JSON.stringify(cookies, null, 2), 'utf8');
+
+    await browser.close();
+    console.log('[ZENDESK RETRY] Login browser closed. Starting retry audits...');
+
+    // === STEP 2: Run retry audits with cookies ===
+    const outputDir = isDev
+      ? path.join(__dirname, 'audits', 'zendesk-audit-results')
+      : path.join(app.getPath('documents'), 'audits', 'zendesk-audit-results');
+
+    await fsPromise.mkdir(outputDir, { recursive: true });
+
+    const pLimit = (await import('p-limit')).default;
+    const limit = pLimit(parseInt(concurrency) || 1);
+
+    const results = [];
+    const failedAudits = [];
+
+    const spawnSingleAudit = (url, index) => {
+      return new Promise((resolve) => {
+        // Check if this session has been cancelled
+        if (cancelledSessions.has(sessionId)) {
+          console.log(`[ZENDESK RETRY ${index + 1}/${failedUrls.length}] Skipped (cancelled): ${url}`);
+          resolve({
+            success: false,
+            url,
+            error: 'Retry cancelled by user',
+            accessibilityScore: 0,
+            cancelled: true
+          });
+          return;
+        }
+
+        const urlPath = new URL(url).pathname.replace(/^\//, '').replace(/\//g, '-') || 'home';
+        const filename = `${urlPath}-zendesk.json`;
+        const outputFile = path.join(outputDir, filename);
+
+        const processId = `zendesk-retry-${Date.now()}-${index}`;
+        let output = "";
+
+        const child = child_process.spawn(
+          nodeBinary,
+          [
+            scriptPath,
+            cookieFilePath,
+            url,
+            outputFile,
+            loadingTime,
+            isViewingAudit
+          ],
+          {
+            stdio: ["ignore", "pipe", "pipe"],
+            cwd: isDev ? process.cwd() : path.join(process.resourcesPath, 'app'),
+            env: {
+              ...process.env,
+              NODE_PATH: isDev
+                ? path.join(__dirname, 'node_modules')
+                : path.join(process.resourcesPath, 'app', 'node_modules'),
+              PUPPETEER_EXECUTABLE_PATH: chromiumPath,
+              AUDIT_OUTPUT_DIR: outputDir
+            }
+          }
+        );
+
+        activeProcesses.set(processId, child);
+
+        child.stdout.on("data", (data) => {
+          output += data.toString();
+        });
+
+        child.stderr.on("data", (data) => {
+          console.error(`[ZENDESK RETRY ${index + 1}]:`, data.toString().trim());
+        });
+
+        child.on("close", (code) => {
+          activeProcesses.delete(processId);
+
+          if (code === 0) {
+            try {
+              const result = JSON.parse(output.trim());
+              resolve({
+                success: true,
+                url,
+                accessibilityScore: result.accessibilityScore,
+                filename
+              });
+            } catch (err) {
+              resolve({
+                success: false,
+                url,
+                error: `Failed to parse result: ${err.message}`,
+                accessibilityScore: 0
+              });
+            }
+          } else {
+            let errorMessage = 'Audit process failed';
+            try {
+              const errorResult = JSON.parse(output.trim());
+              errorMessage = errorResult.error || errorMessage;
+            } catch (e) {
+              // Use default
+            }
+            resolve({
+              success: false,
+              url,
+              error: errorMessage,
+              accessibilityScore: 0
+            });
+          }
+        });
+
+        child.on("error", (err) => {
+          activeProcesses.delete(processId);
+          resolve({
+            success: false,
+            url,
+            error: `Failed to spawn: ${err.message}`,
+            accessibilityScore: 0
+          });
+        });
+      });
+    };
+
+    const auditPromises = failedUrls.map((url, index) => {
+      return limit(() => spawnSingleAudit(url, index).then(result => {
+        results.push(result);
+        if (!result.success) {
+          failedAudits.push({ url, error: result.error });
+        }
+        console.log(`[ZENDESK RETRY] Progress: ${results.length}/${failedUrls.length}`);
+        return result;
+      }));
+    });
+
+    await Promise.all(auditPromises);
+
+    // Clean up cookie file
+    try {
+      await fsPromise.unlink(cookieFilePath);
+    } catch (err) {
+      console.warn('[ZENDESK RETRY] Failed to delete cookie file:', err.message);
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`[ZENDESK RETRY] Complete: ${successCount}/${failedUrls.length} successful`);
+
+    // Clean up session tracking
+    activeSessions.delete(sessionId);
+    cancelledSessions.delete(sessionId);
+    console.log(`[ZENDESK RETRY] Session ${sessionId} cleaned up`);
+
+    return {
+      success: true,
+      message: `Retry completed: ${successCount}/${failedUrls.length} successful`,
+      totalAudits: failedUrls.length,
+      successfulAudits: successCount,
+      failedAudits: failedAudits,
+      results: results,
+      outputDir: outputDir
+    };
+
+  } catch (err) {
+    console.error('[ZENDESK RETRY] Error:', err.message);
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+
+    // Clean up session tracking on error
+    activeSessions.delete(sessionId);
+    cancelledSessions.delete(sessionId);
+
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+});
+
+ipcMain.handle("read-zendesk-paths", async () => {
+  const basePath = isDev
+    ? path.join(__dirname, "audits", "zendesk-paths")
+    : path.join(app.getPath('documents'), "audits", "zendesk-paths");
+
+  try {
+    return await loadFolderData(basePath);
+  } catch (err) {
+    console.error("error reading zendesk-paths folder:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("read-zendesk-audit-results", async () => {
+  const basePath = isDev
+    ? path.join(__dirname, "audits", "zendesk-audit-results")
+    : path.join(app.getPath('documents'), "audits", "zendesk-audit-results");
+
+  try {
+    return await loadFolderData(basePath);
+  } catch (err) {
+    console.error("error reading zendesk-audit-results folder:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("get-zendesk-path-line-count", async (_event, filename) => {
+  try {
+    const filePath = isDev
+      ? path.join(__dirname, "audits", "zendesk-paths", filename)
+      : path.join(app.getPath('documents'), "audits", "zendesk-paths", filename);
+
+    const content = await fsPromise.readFile(filePath, "utf8");
+    const lines = content.split('\n').filter(line => line.trim()).length;
+
+    return { lineCount: lines };
+  } catch (err) {
+    console.error(`Failed to read file ${filename}:`, err);
+    throw new Error(`Unable to read file: ${err.message}`);
+  }
+});
