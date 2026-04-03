@@ -18,6 +18,9 @@ const AuditMenu = () => {
       <HStack {...CenteredHstackCss}>
         <LinkButton destination="./test-all" buttonText="Test All" buttonClass="btn btn-menu btn-audit" />
         <LinkButton destination="./test-single" buttonText="Test One" buttonClass="btn btn-menu btn-audit" />
+      </HStack>
+      <HStack {...CenteredHstackCss}>
+        <LinkButton destination="./zendesk-menu" buttonText="Zendesk Tasks" buttonClass="btn btn-menu btn-audit" />
         <LinkButton destination="./test-transfer" buttonText="Transfer Audits" buttonClass="btn btn-menu btn-audit" />
       </HStack>
 

@@ -10,6 +10,10 @@ body {
   /* scrollbar-color: #2d1b3f transparent; */
 }
 
+hr {
+  width: 100%;
+}
+
 body {
   background: linear-gradient(90deg, #121212 0%, #1a1a1a 25%, #2d1b3f 70%, #121212 100%);
   display: flex;
@@ -122,6 +126,11 @@ ul {
 
 .btn-small {
   height: 48px;
+  width: 200px;
+}
+
+.btn-medium {
+  height: 64px;
   width: 200px;
 }
 

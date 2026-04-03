@@ -6,6 +6,7 @@ import AuditMenu from "../pages/AuditMenu";
 import AuditAll from "../pages/AuditAll";
 import AuditOne from "../pages/AuditOne";
 import AuditTransfer from "../pages/AuditTransfer";
+import ZendeskLogin from "../pages/ZendeskLogin";
 import ListMenu from "../pages/ListMenu";
 import ListAudits from "../pages/ListAudits"
 import ListOldAudits from "../pages/ListOldAudits";
@@ -23,6 +24,7 @@ const App = () => {
           <Route path="test-all" element={<AuditAll />} />
           <Route path="test-single" element={<AuditOne />} />
           <Route path="test-transfer" element={<AuditTransfer />} />
+          <Route path="zendesk-login" element={<ZendeskLogin />} />
         </Route>
         <Route path="lists-menu">
           <Route index element={<ListMenu />} />

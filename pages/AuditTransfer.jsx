@@ -10,9 +10,9 @@ const AuditTransfer = () => {
   const [pageStatus, setPageStatus] = useState('ready')
   const [statusMessage, setStatusMessage] = useState('')
 
-  const handleTransfer = async () => {
+  const handleTransfer = async (fromFolderName, toFolderName) => {
     try {
-      const result = await window.electronAPI.moveAuditFiles()
+      const result = await window.electronAPI.moveAuditFiles(fromFolderName, toFolderName)
       setPageStatus(result.success ? 'finished' : 'error')
       setStatusMessage(result.message)
     } catch (err) {
@@ -34,7 +34,10 @@ const AuditTransfer = () => {
         <h3>Move all audits from current audit results folder to old audit results?</h3>
         <h4><strong>This will delete all old audits and move all of your current audits to the Old Audits folder.</strong> Save your work if you need to before continuing.</h4>
         <h4>Please note that even if you have no current audits, clicking this button will still delete all old audits.</h4>
-        <button className="btn btn-small" onClick={handleTransfer}>Transfer Audits</button>
+        <HStack {...CenteredHstackCss}>
+          <button className="btn btn-medium" onClick={() => handleTransfer('audit-results', 'old-audit-results')}>Transfer Concurrent Audits</button>
+          <button className="btn btn-medium" onClick={() => handleTransfer('zendesk-audit-results', 'old-zendesk-audit-results')} >Transfer Zendesk Audits</button>
+        </HStack>
       </VStack>
       <VStack {...BodyVstackCss}
         display={pageStatus === "finished" ? "inherit" : "none"}
