@@ -55,7 +55,7 @@ const ReadyScreen = memo(
   }) => {
     return (
       <VStack {...BodyVstackCss}>
-        <h2>Zendesk Tasks</h2>
+        <h1>Zendesk Tasks</h1>
         <p>This functionality serves to audit FamilySearch's Zendesk site for accessibility purposes. Choose from scraping the site's availble articles to obtain a full list, or audit the set of URL/path combinations determined in settings.</p>
         <hr />
         <h3>Select the task you want to perform</h3>
@@ -459,7 +459,7 @@ ${errorObj.lastErrorOutput}
         <h4 style={{ color: '#e53e3e', fontWeight: 'bold' }}>{friendlyMessage}</h4>
         <p style={{ maxWidth: '600px', textAlign: 'center' }}>{suggestion}</p>
         <button
-          className="btn btn-small"
+          className="btn btn-medium"
           onClick={() => setIsViewingError(!isViewingError)}
         >
           {isViewingError ? "Hide Error Details" : "View Error Details"}
