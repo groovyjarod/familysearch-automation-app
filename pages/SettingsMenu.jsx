@@ -37,7 +37,7 @@ const SettingsMenu = () => {
         <LinkButton
           destination="/view-logs"
           buttonText="View Application Logs"
-          buttonClass="btn btn-main btn-view"
+          buttonClass="btn btn-extension"
         />
         <HStack {...CenteredHstackCss}>
           <VStack {...BodyVstackCss}>
