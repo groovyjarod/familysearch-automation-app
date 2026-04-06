@@ -14,6 +14,7 @@ import ListOldAudits from "./pages/ListOldAudits";
 import ListCustomAudits from "./pages/ListCustomAudits";
 import ListZendeskPaths from "./pages/ListZendeskPaths";
 import ListZendeskAudits from "./pages/ListZendeskAudits";
+import ListOldZendeskAudits from "./pages/ListOldZendeskAudits"
 import SettingsMenu from "./pages/SettingsMenu";
 import ExtensionInfo from "./pages/ExtensionInfo";
 import ViewLogs from "./pages/ViewLogs";
@@ -37,6 +38,7 @@ const App = () => {
           <Route path="view-custom-audits" element={<ListCustomAudits />} />
           <Route path="view-zendesk-paths" element={<ListZendeskPaths />} />
           <Route path="view-zendesk-audits" element={<ListZendeskAudits />} />
+          <Route path="view-old-zendesk-audits" element={<ListOldZendeskAudits />} />
         </Route>
         <Route path="files-menu" element={<SettingsMenu />} />
         <Route path="extension-menu" element={<ExtensionInfo />} />

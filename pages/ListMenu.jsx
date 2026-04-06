@@ -22,6 +22,7 @@ const ListMenu = () => {
         </HStack>
         <HStack {...CenteredHstackCss}>
             <LinkButton destination="./view-zendesk-audits" buttonText="Zendesk Audits" buttonClass="btn btn-menu btn-view" />
+            <LinkButton destination="./view-old-zendesk-audits" buttonText="Old Zendesk Audits" buttonClass="btn btn-menu btn-view" />
             <LinkButton destination="./view-zendesk-paths" buttonText="Zendesk Paths" buttonClass="btn btn-menu btn-view" />
         </HStack>
     </VStack>

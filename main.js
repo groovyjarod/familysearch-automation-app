@@ -275,7 +275,15 @@ const createWindow = async () => {
   // Initialize settings in userData before anything else
   await initializeSettings();
 
-  const allFolderPaths = ['all-audit-sizes', 'audit-results', 'old-audit-results', 'custom-audit-results']
+  const allFolderPaths = [
+    'all-audit-sizes',
+    'audit-results',
+    'old-audit-results',
+    'custom-audit-results',
+    'zendesk-audit-results',
+    'old-zendesk-audit-results',
+    'zendesk-paths'
+  ]
   try {
     const auditsPath = isDev
       ? path.join(__dirname, 'audits')
@@ -1421,7 +1429,6 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
       return new Promise((resolve) => {
         // Check if this session has been cancelled
         if (cancelledSessions.has(sessionId)) {
-          console.log(`[ZENDESK AUDIT ${index + 1}/${urlsToAudit.length}] Skipped (cancelled): ${url}`);
           resolve({
             success: false,
             url,
@@ -1537,7 +1544,6 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
         if (!result.success) {
           failedAudits.push({ url, error: result.error });
         }
-        console.log(`[ZENDESK AUDIT] Progress: ${results.length}/${urlsToAudit.length}`);
         return result;
       }));
     });
@@ -1810,7 +1816,6 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
       return new Promise((resolve) => {
         // Check if this session has been cancelled
         if (cancelledSessions.has(sessionId)) {
-          console.log(`[ZENDESK RETRY ${index + 1}/${failedUrls.length}] Skipped (cancelled): ${url}`);
           resolve({
             success: false,
             url,
@@ -1917,7 +1922,6 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
         if (!result.success) {
           failedAudits.push({ url, error: result.error });
         }
-        console.log(`[ZENDESK RETRY] Progress: ${results.length}/${failedUrls.length}`);
         return result;
       }));
     });
@@ -1988,6 +1992,19 @@ ipcMain.handle("read-zendesk-audit-results", async () => {
     return await loadFolderData(basePath);
   } catch (err) {
     console.error("error reading zendesk-audit-results folder:", err.message);
+    return [];
+  }
+});
+
+ipcMain.handle("read-old-zendesk-audit-results", async () => {
+  const basePath = isDev
+    ? path.join(__dirname, "audits", "old-zendesk-audit-results")
+    : path.join(app.getPath('documents'), "audits", "old-zendesk-audit-results");
+
+  try {
+    return await loadFolderData(basePath);
+  } catch (err) {
+    console.error("error reading old-zendesk-audit-results folder:", err.message);
     return [];
   }
 });

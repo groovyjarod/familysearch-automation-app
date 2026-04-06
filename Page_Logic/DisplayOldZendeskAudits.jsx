@@ -3,18 +3,18 @@ import { VStack, HStack } from "@chakra-ui/react";
 import BodyVstackCss from "../reusables/BodyVstackCss";
 import CenteredVstackCss from "../reusables/CenteredVstackCss";
 
-const DisplayOldAuditResults = () => {
+const DisplayOldZendeskAudits = () => {
   const [files, setFiles] = useState([]);
 
   useEffect(() => {
     window.electronAPI
-      .getOldAudits()
+      .getOldZendeskAuditResults()
       .then(async (files) => {
         const withMetadata = await Promise.all(
           files.map(async (file) => {
             try {
               const metadata = await window.electronAPI.getAuditMetadata(
-                "old-audit-results",
+                "old-zendesk-audit-results",
                 file.name
               );
               return { ...file, metadata };
@@ -27,13 +27,14 @@ const DisplayOldAuditResults = () => {
         setFiles(withMetadata);
       })
       .catch((err) => {
-        console.error('Failed to fetch old audit results:', err);
+        console.error('Failed to fetch old zendesk audit results:', err);
         setFiles([]);
       });
   }, []);
+
   return (
     <VStack {...CenteredVstackCss}>
-      <h2>Old Audit Results</h2>
+      <h2>Old Zendesk Audit Results</h2>
       <HStack width="95%" justifyContent="space-between">
         <h3>Name</h3>
         <HStack minW="50%" width="50%" justifyContent="space-between">
@@ -53,7 +54,7 @@ const DisplayOldAuditResults = () => {
               onClick={() =>
                 window.electronAPI.openResultsFile(
                   file.name,
-                  "old-audit-results"
+                  "old-zendesk-audit-results"
                 )
               }
             >
@@ -75,4 +76,4 @@ const DisplayOldAuditResults = () => {
   );
 };
 
-export default DisplayOldAuditResults;
+export default DisplayOldZendeskAudits;

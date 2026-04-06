@@ -20,7 +20,7 @@ const MenuHeader = ({ title, subTitle, headerText, handleBackButton }) => {
         <h1>{title}</h1>
         <h4>{subTitle}</h4>
         </HStack>
-        <Text>{headerText}</Text>
+        <Text width="90%">{headerText}</Text>
     </VStack>
   );
 };

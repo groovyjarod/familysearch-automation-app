@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   zendeskRetryFailedAudits: (loginId, password, zendeskUrl, failedUrls, isViewingAudit, loadingTime, concurrency) =>
     ipcRenderer.invoke("zendesk-retry-failed-audits", loginId, password, zendeskUrl, failedUrls, isViewingAudit, loadingTime, concurrency),
   getZendeskPaths: () => ipcRenderer.invoke("read-zendesk-paths"),
+  getOldZendeskAuditResults: () => ipcRenderer.invoke("read-old-zendesk-audit-results"),
   getZendeskAuditResults: () => ipcRenderer.invoke("read-zendesk-audit-results"),
   getZendeskPathLineCount: (filename) => ipcRenderer.invoke("get-zendesk-path-line-count", filename),
   checkNode: () => ipcRenderer.invoke("check-node"),
