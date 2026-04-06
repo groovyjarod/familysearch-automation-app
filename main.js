@@ -1283,7 +1283,7 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
     const tempDir = isDev
       ? path.join(__dirname, 'temp')
       : path.join(app.getPath('userData'), 'temp');
-    await fsPromise.mkdir(tempDir, { recursive: true });
+    await ensureDir(tempDir);
 
     const cookieFilePath = path.join(tempDir, `zendesk-cookies-${Date.now()}.json`);
     await fsPromise.writeFile(cookieFilePath, JSON.stringify(cookies, null, 2), 'utf8');
@@ -1298,7 +1298,7 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
       ? path.join(__dirname, 'audits', 'zendesk-audit-results')
       : path.join(app.getPath('documents'), 'audits', 'zendesk-audit-results');
 
-    await fsPromise.mkdir(outputDir, { recursive: true });
+    await ensureDir(outputDir);
 
     // Import p-limit dynamically
     const pLimit = (await import('p-limit')).default;
@@ -1676,7 +1676,7 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
     const tempDir = isDev
       ? path.join(__dirname, 'temp')
       : path.join(app.getPath('userData'), 'temp');
-    await fsPromise.mkdir(tempDir, { recursive: true });
+    await ensureDir(tempDir);
 
     const cookieFilePath = path.join(tempDir, `zendesk-retry-cookies-${Date.now()}.json`);
     await fsPromise.writeFile(cookieFilePath, JSON.stringify(cookies, null, 2), 'utf8');
@@ -1689,7 +1689,7 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
       ? path.join(__dirname, 'audits', 'zendesk-audit-results')
       : path.join(app.getPath('documents'), 'audits', 'zendesk-audit-results');
 
-    await fsPromise.mkdir(outputDir, { recursive: true });
+    await ensureDir(outputDir);
 
     const pLimit = (await import('p-limit')).default;
     const limit = pLimit(parseInt(concurrency) || 1);

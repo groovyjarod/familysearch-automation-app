@@ -8,6 +8,29 @@ import trimAuditData from './trimAuditData.mjs';
 import classifyIssue from './classifyIssue.mjs';
 import buildZendeskLinkTree from './buildZendeskLinkTree.mjs';
 
+// Windows-safe directory creation with retry logic
+async function ensureDir(dirPath, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fsPromises.mkdir(dirPath, { recursive: true });
+      return; // Success
+    } catch (err) {
+      // Ignore EEXIST - directory already exists (safe)
+      if (err.code === 'EEXIST') {
+        return;
+      }
+      // Retry on Windows file locking errors
+      if ((err.code === 'EPERM' || err.code === 'EACCES' || err.code === 'EBUSY') && i < retries - 1) {
+        console.error(`ensureDir: Retry ${i + 1} for ${dirPath} due to ${err.code}`);
+        await new Promise(resolve => setTimeout(resolve, 100 * (i + 1))); // Exponential backoff
+        continue;
+      }
+      // Other errors or retries exhausted - throw
+      throw err;
+    }
+  }
+}
+
 export default async function zendeskLogin(
   loginId,
   password,
@@ -317,7 +340,7 @@ export default async function zendeskLogin(
     const outputPath = path.join(outputDir, filename);
 
     // Ensure directory exists
-    await fsPromises.mkdir(outputDir, { recursive: true });
+    await ensureDir(outputDir);
 
     // Write audit results to file
     console.error(`Writing audit results to: ${outputPath}`);
