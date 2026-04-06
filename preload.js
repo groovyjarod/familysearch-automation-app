@@ -69,6 +69,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getZendeskAuditResults: () => ipcRenderer.invoke("read-zendesk-audit-results"),
   getZendeskPathLineCount: (filename) => ipcRenderer.invoke("get-zendesk-path-line-count", filename),
   checkNode: () => ipcRenderer.invoke("check-node"),
+  // Logging functionality
+  getLogFilePath: () => ipcRenderer.invoke("get-log-file-path"),
+  readLogFile: () => ipcRenderer.invoke("read-log-file"),
+  getAllLogFiles: () => ipcRenderer.invoke("get-all-log-files"),
+  readSpecificLogFile: (filename) => ipcRenderer.invoke("read-specific-log-file", filename),
 });
 
 console.log("preload script loaded.");
