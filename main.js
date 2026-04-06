@@ -10,6 +10,112 @@ const pLimit = require("p-limit");
 const pLimitDefault = require("p-limit").default;
 require("@electron/remote/main").initialize();
 
+// ------------ Logging System ------------
+
+let logFilePath = null;
+let logStream = null;
+
+// Initialize logging system
+async function initializeLogging() {
+  const logsDir = path.join(app.getPath('userData'), 'logs');
+  await ensureDir(logsDir);
+
+  // Get current week identifier (YYYY-WW format)
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  const weekIdentifier = `${now.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+
+  logFilePath = path.join(logsDir, `app-${weekIdentifier}.log`);
+
+  // Clean up old log files (keep only current week and previous 4 weeks)
+  try {
+    const files = await fsPromise.readdir(logsDir);
+    const logFiles = files.filter(f => f.startsWith('app-') && f.endsWith('.log'));
+
+    // Sort by filename (chronological due to YYYY-WW format)
+    logFiles.sort().reverse();
+
+    // Keep only the 5 most recent log files
+    if (logFiles.length > 5) {
+      const filesToDelete = logFiles.slice(5);
+      await Promise.all(
+        filesToDelete.map(file =>
+          fsPromise.unlink(path.join(logsDir, file)).catch(err =>
+            console.error(`Failed to delete old log file ${file}:`, err)
+          )
+        )
+      );
+    }
+  } catch (err) {
+    console.error('Failed to clean up old log files:', err);
+  }
+
+  // Create write stream for appending logs
+  logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+
+  // Write session start marker
+  const sessionStart = `\n========== Session Start: ${now.toISOString()} ==========\n`;
+  logStream.write(sessionStart);
+
+  // Capture console.log
+  const originalLog = console.log;
+  console.log = (...args) => {
+    const message = args.map(arg =>
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] [LOG] ${message}\n`;
+
+    if (logStream) {
+      logStream.write(logEntry);
+    }
+    originalLog.apply(console, args);
+  };
+
+  // Capture console.error
+  const originalError = console.error;
+  console.error = (...args) => {
+    const message = args.map(arg =>
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] [ERROR] ${message}\n`;
+
+    if (logStream) {
+      logStream.write(logEntry);
+    }
+    originalError.apply(console, args);
+  };
+
+  // Capture console.warn
+  const originalWarn = console.warn;
+  console.warn = (...args) => {
+    const message = args.map(arg =>
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] [WARN] ${message}\n`;
+
+    if (logStream) {
+      logStream.write(logEntry);
+    }
+    originalWarn.apply(console, args);
+  };
+
+  console.log('Logging system initialized');
+  console.log(`Log file: ${logFilePath}`);
+}
+
+// Close log stream on app quit
+app.on('before-quit', () => {
+  if (logStream) {
+    const sessionEnd = `========== Session End: ${new Date().toISOString()} ==========\n\n`;
+    logStream.write(sessionEnd);
+    logStream.end();
+  }
+});
+
 // Windows-safe directory creation with retry logic
 async function ensureDir(dirPath, retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -163,6 +269,9 @@ const activeProcesses = new Map();
 const cancelledSessions = new Set();
 const activeSessions = new Set(); // Track currently running audit sessions
 const createWindow = async () => {
+  // Initialize logging system first
+  await initializeLogging();
+
   // Initialize settings in userData before anything else
   await initializeSettings();
 
@@ -1896,5 +2005,63 @@ ipcMain.handle("get-zendesk-path-line-count", async (_event, filename) => {
   } catch (err) {
     console.error(`Failed to read file ${filename}:`, err);
     throw new Error(`Unable to read file: ${err.message}`);
+  }
+});
+
+// ------------ Log Viewing IPC Handlers ------------
+
+ipcMain.handle("get-log-file-path", async () => {
+  return logFilePath;
+});
+
+ipcMain.handle("read-log-file", async () => {
+  try {
+    if (!logFilePath) {
+      return { success: false, error: 'Log file not initialized' };
+    }
+
+    // Check if log file exists
+    try {
+      await fsPromise.access(logFilePath);
+    } catch {
+      return { success: true, content: 'No logs yet for this week.' };
+    }
+
+    const content = await fsPromise.readFile(logFilePath, 'utf8');
+    return { success: true, content };
+  } catch (err) {
+    console.error('Failed to read log file:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("get-all-log-files", async () => {
+  try {
+    const logsDir = path.join(app.getPath('userData'), 'logs');
+    await ensureDir(logsDir);
+
+    const files = await fsPromise.readdir(logsDir);
+    const logFiles = files.filter(f => f.startsWith('app-') && f.endsWith('.log'));
+
+    // Sort by filename (reverse chronological)
+    logFiles.sort().reverse();
+
+    return { success: true, files: logFiles };
+  } catch (err) {
+    console.error('Failed to get log files:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle("read-specific-log-file", async (_event, filename) => {
+  try {
+    const logsDir = path.join(app.getPath('userData'), 'logs');
+    const filePath = path.join(logsDir, filename);
+
+    const content = await fsPromise.readFile(filePath, 'utf8');
+    return { success: true, content };
+  } catch (err) {
+    console.error(`Failed to read log file ${filename}:`, err);
+    return { success: false, error: err.message };
   }
 });

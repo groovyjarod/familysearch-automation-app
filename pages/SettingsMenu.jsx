@@ -4,6 +4,7 @@ import CenteredHstackCss from '../reusables/CenteredHstackCss'
 import CenteredVstackCss from '../reusables/CenteredVstackCss'
 import MenuHeader from '../reusables/MenuHeader'
 import BodyVstackCss from '../reusables/BodyVstackCss'
+import LinkButton from '../reusables/LinkButton'
 
 const SettingsMenu = () => {
 
@@ -33,6 +34,11 @@ const SettingsMenu = () => {
   return (
     <VStack {...CenteredVstackCss}>
         <MenuHeader title="Settings" subTitle={`Version ${version}`} />
+        <LinkButton
+          destination="/view-logs"
+          buttonText="View Application Logs"
+          buttonClass="btn btn-main btn-view"
+        />
         <HStack {...CenteredHstackCss}>
           <VStack {...BodyVstackCss}>
             <h2>Change Paths</h2>

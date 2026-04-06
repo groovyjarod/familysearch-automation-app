@@ -16,6 +16,7 @@ import ListZendeskPaths from "./pages/ListZendeskPaths";
 import ListZendeskAudits from "./pages/ListZendeskAudits";
 import SettingsMenu from "./pages/SettingsMenu";
 import ExtensionInfo from "./pages/ExtensionInfo";
+import ViewLogs from "./pages/ViewLogs";
 
 const App = () => {
   return (
@@ -39,6 +40,7 @@ const App = () => {
         </Route>
         <Route path="files-menu" element={<SettingsMenu />} />
         <Route path="extension-menu" element={<ExtensionInfo />} />
+        <Route path="view-logs" element={<ViewLogs />} />
       </Routes>
     </HashRouter>
   );
