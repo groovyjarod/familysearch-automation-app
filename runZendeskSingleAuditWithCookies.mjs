@@ -7,6 +7,29 @@ import path from 'path';
 import trimAuditData from './Audit_Logic/trimAuditData.mjs';
 import classifyIssue from './Audit_Logic/classifyIssue.mjs';
 
+// Windows-safe directory creation with retry logic
+async function ensureDir(dirPath, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fsPromises.mkdir(dirPath, { recursive: true });
+      return; // Success
+    } catch (err) {
+      // Ignore EEXIST - directory already exists (safe)
+      if (err.code === 'EEXIST') {
+        return;
+      }
+      // Retry on Windows file locking errors
+      if ((err.code === 'EPERM' || err.code === 'EACCES' || err.code === 'EBUSY') && i < retries - 1) {
+        console.error(`ensureDir: Retry ${i + 1} for ${dirPath} due to ${err.code}`);
+        await new Promise(resolve => setTimeout(resolve, 100 * (i + 1))); // Exponential backoff
+        continue;
+      }
+      // Other errors or retries exhausted - throw
+      throw err;
+    }
+  }
+}
+
 // Parse CLI arguments
 const [,, cookieFilePath, auditUrl, outputFile, loadingTime, isViewingAudit] = process.argv;
 
@@ -195,7 +218,7 @@ async function main() {
 
     // Write audit result to file
     const outputDir = path.dirname(outputFile);
-    await fsPromises.mkdir(outputDir, { recursive: true });
+    await ensureDir(outputDir);
     await fsPromises.writeFile(outputFile, JSON.stringify(initialJsonReport, null, 2), 'utf8');
     console.error(`[ZENDESK AUDIT] Saved to: ${outputFile}`);
 
