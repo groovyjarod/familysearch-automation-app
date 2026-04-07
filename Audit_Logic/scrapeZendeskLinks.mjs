@@ -316,10 +316,10 @@ export default async function scrapeAndSaveZendeskLinks(
 
     // Wait for navigation to target page
     console.error('Waiting for navigation to https://articles.familysearch.org/hc/en-us...');
-    const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
+    const targetUrlPattern = /articles\.familysearch\.org\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 60;
 
     while (!navigationComplete && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000));
