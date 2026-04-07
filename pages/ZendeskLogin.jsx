@@ -51,7 +51,7 @@ const ReadyScreen = memo(
       <VStack {...BodyVstackCss}>
         <h2>Zendesk Site Crawler & Auditor</h2>
         <p>
-          This will log into articles.familysearch.com, then automatically crawl the entire English site
+          This will log into articles.familysearch.org, then automatically crawl the entire English site
           (up to 5 levels deep) and run Lighthouse accessibility audits on every page discovered.
         </p>
         <p style={{ fontSize: '14px', color: '#7f8c8d' }}>
@@ -225,7 +225,7 @@ const ZendeskLogin = () => {
       </p>
       <ul style={{ textAlign: 'left', maxWidth: '600px', margin: '0 auto' }}>
         <li>Run a Lighthouse accessibility audit on the initial page</li>
-        <li>Discover all English links within articles.familysearch.com/hc/en-us</li>
+        <li>Discover all English links within articles.familysearch.org/hc/en-us</li>
         <li>Navigate to each discovered English page (up to 5 levels deep)</li>
         <li>Run accessibility audits on each page</li>
         <li>Save all results to audits/custom-audit-results/</li>
@@ -248,7 +248,7 @@ const ZendeskLogin = () => {
         <h2 className="auditOne-finished">
           Successfully Logged Into Zendesk and Completed Site Crawl
         </h2>
-        <h3 className="auditOne-finished">articles.familysearch.com</h3>
+        <h3 className="auditOne-finished">articles.familysearch.org</h3>
       </div>
       <div style={{
         maxWidth: '600px',
@@ -299,7 +299,7 @@ const ZendeskLogin = () => {
 ERROR DETAILS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-URL: articles.familysearch.com
+URL: articles.familysearch.org
 Timestamp: ${errorObj.timestamp || new Date().toISOString()}
 
 ERROR MESSAGE:
@@ -323,7 +323,7 @@ ${errorObj.lastErrorOutput}
 
     return (
       <VStack {...BodyVstackCss}>
-        <h3>Login failed for articles.familysearch.com</h3>
+        <h3>Login failed for articles.familysearch.org</h3>
         <h4 style={{ color: '#e53e3e', fontWeight: 'bold' }}>{friendlyMessage}</h4>
         <p style={{ maxWidth: '600px', textAlign: 'center' }}>{suggestion}</p>
         <button
@@ -363,7 +363,7 @@ ${errorObj.lastErrorOutput}
 
   const CancelledScreen = () => (
     <VStack {...BodyVstackCss}>
-      <h3 className="auditOne-finished">Login Cancelled for articles.familysearch.com</h3>
+      <h3 className="auditOne-finished">Login Cancelled for articles.familysearch.org</h3>
       <h4 className="auditOne-finished">{errorMessage}</h4>
       <button className="btn btn-main" onClick={handleRunAgain}>
         Try Again

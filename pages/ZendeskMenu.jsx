@@ -92,7 +92,7 @@ const ReadyScreen = memo(
               buttonClass="btn btn-small"
             />
           </HStack>
-          <p>Ensure that your initial URL is set to <i><strong>https://articles.familysearch.com/hc/en-us/</strong></i> before beginning. You may edit the initial URL by clicking 'Edit Wiki Paths'.</p>
+          <p>Ensure that your initial URL is set to <i><strong>https://articles.familysearch.org/hc/en-us/</strong></i> before beginning. You may edit the initial URL by clicking 'Edit Wiki Paths'.</p>
         </VStack>
 
         {/* Common Fields */}
@@ -118,7 +118,7 @@ const ReadyScreen = memo(
               label="Zendesk URL"
               value={zendeskUrl}
               setValue={setZendeskUrl}
-              placeholder="e.g., https://articles.familysearch.com/hc/en-us"
+              placeholder="e.g., https://articles.familysearch.org/hc/en-us"
             />
           </>
         )}
@@ -201,7 +201,7 @@ const ZendeskMenu = () => {
   const [taskType, setTaskType] = useState("scrape");
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [zendeskUrl, setZendeskUrl] = useState("https://articles.familysearch.com/hc/en-us");
+  const [zendeskUrl, setZendeskUrl] = useState("https://articles.familysearch.org/hc/en-us");
   const [concurrency, setConcurrency] = useState("3");
   const [titleHeader, setTitleHeader] = useState("Zendesk Tasks");
   const [isViewingError, setIsViewingError] = useState(false);

@@ -19,13 +19,13 @@ function normalizeUrl(urlString) {
 }
 
 /**
- * Checks if a URL is within the articles.familysearch.com/hc/en-us path (English only)
+ * Checks if a URL is within the articles.familysearch.org/hc/en-us path (English only)
  */
 function isZendeskUrl(urlString) {
   try {
     const url = new URL(urlString);
-    // Must be articles.familysearch.com domain
-    if (url.hostname !== 'articles.familysearch.com') {
+    // Must be articles.familysearch.org domain
+    if (url.hostname !== 'articles.familysearch.org') {
       return false;
     }
     // Must start with /hc/en-us to ensure English content only
