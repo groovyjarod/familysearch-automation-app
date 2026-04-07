@@ -1362,7 +1362,7 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
     console.log('[ZENDESK AUDIT] Sign in button clicked. Waiting for 2FA...');
 
     // Wait for navigation to complete (includes 2FA)
-    const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
+    const targetUrlPattern = /articles\.familysearch\.org\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
     const maxAttempts = 60;
@@ -1758,7 +1758,7 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
     console.log('[ZENDESK RETRY] Sign in button clicked. Waiting for 2FA...');
 
     // Wait for navigation
-    const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
+    const targetUrlPattern = /articles\.familysearch\.org\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
     const maxAttempts = 60;

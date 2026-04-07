@@ -213,10 +213,10 @@ export default async function zendeskLogin(
 
     // Wait for navigation to the target page (checking every second for up to 20 seconds)
     console.error('Waiting for navigation to https://articles.familysearch.org/hc/en-us...');
-    const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
+    const targetUrlPattern = /articles\.familysearch\.org\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
-    const maxAttempts = 20; // 20 seconds
+    const maxAttempts = 60; // 60 seconds
 
     while (!navigationComplete && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000));
