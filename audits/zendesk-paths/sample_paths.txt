@@ -1,4 +1,4 @@
-https://familysearch.zendesk.com/hc/en-us
+https://articles.familysearch.com/hc/en-us
 requests
 p/Support-Certification
 p/zendesk-instruction
