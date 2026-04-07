@@ -38,7 +38,7 @@ export default async function zendeskLogin(
   loadingTime
 ) {
   const LOADING_TIME = parseInt(loadingTime) * 1000; // timeout timer in milliseconds
-  const ZENDESK_URL = "https://familysearch.zendesk.com";
+  const ZENDESK_URL = "https://articles.familysearch.com";
   const viewport = { width: 1920, height: 1080 };
   // Use process ID for deterministic port assignment
   const EXPLICIT_PORT = 9222 + (process.pid % 1000);
@@ -212,7 +212,7 @@ export default async function zendeskLogin(
     console.error('Sign in button clicked.');
 
     // Wait for navigation to the target page (checking every second for up to 20 seconds)
-    console.error('Waiting for navigation to https://familysearch.zendesk.com/hc/en-us...');
+    console.error('Waiting for navigation to https://articles.familysearch.com/hc/en-us...');
     const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;

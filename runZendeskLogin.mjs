@@ -35,7 +35,7 @@ async function performLogin() {
       errorLocation: err.location || 'runZendeskLogin.mjs - performLogin',
       friendlyMessage: err.friendlyMessage || 'Failed to complete Zendesk login',
       suggestion: err.suggestion || 'Check your credentials and connection, then try again',
-      url: err.url || 'familysearch.zendesk.com',
+      url: err.url || 'articles.familysearch.com',
       stack: err.stack,
       timestamp: new Date().toISOString()
     };

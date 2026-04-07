@@ -18,13 +18,13 @@ function normalizeUrl(urlString) {
 }
 
 /**
- * Checks if a URL is within the familysearch.zendesk.com/hc/en-us path (English only)
+ * Checks if a URL is within the articles.familysearch.com/hc/en-us path (English only)
  */
 function isZendeskUrl(urlString) {
   try {
     const url = new URL(urlString);
-    // Must be familysearch.zendesk.com domain
-    if (url.hostname !== 'familysearch.zendesk.com') {
+    // Must be articles.familysearch.com domain
+    if (url.hostname !== 'articles.familysearch.com') {
       return false;
     }
     // Must start with /hc/en-us to ensure English content only
@@ -315,7 +315,7 @@ export default async function scrapeAndSaveZendeskLinks(
     console.error('Sign in button clicked.');
 
     // Wait for navigation to target page
-    console.error('Waiting for navigation to https://familysearch.zendesk.com/hc/en-us...');
+    console.error('Waiting for navigation to https://articles.familysearch.com/hc/en-us...');
     const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
