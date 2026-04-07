@@ -1365,7 +1365,7 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
     const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 60;
 
     while (!navigationComplete && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1761,7 +1761,7 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
     const targetUrlPattern = /familysearch\.zendesk\.com\/hc\/en-us/;
     let navigationComplete = false;
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 60;
 
     while (!navigationComplete && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000));
