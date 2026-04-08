@@ -10,6 +10,7 @@ lerna-debug.log*
 audits/zendesk-paths
 temp/
 dist/
+docs/
 dist-ssr
 bin/
 build/

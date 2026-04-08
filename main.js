@@ -103,8 +103,6 @@ async function initializeLogging() {
     originalWarn.apply(console, args);
   };
 
-  console.log('Logging system initialized');
-  console.log(`Log file: ${logFilePath}`);
 }
 
 // Close log stream on app quit
@@ -159,7 +157,6 @@ async function initializeSettings() {
         // File doesn't exist, copy from defaults
         try {
           await fsPromise.copyFile(defaultFile, userFile);
-          console.log(`Initialized settings file: ${file}`);
         } catch (err) {
           console.error(`Failed to initialize ${file}:`, err);
         }
@@ -300,7 +297,6 @@ const createWindow = async () => {
 
   try {
     const preloadPath = path.join(__dirname, "preload.js");
-    console.log('Preload path:', preloadPath);
     try {
       await fsPromise.access(preloadPath)
     } catch (err) {
@@ -1553,7 +1549,6 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
     // Clean up cookie file
     try {
       await fsPromise.unlink(cookieFilePath);
-      console.log('[ZENDESK AUDIT] Cookie file cleaned up');
     } catch (err) {
       console.warn('[ZENDESK AUDIT] Failed to delete cookie file:', err.message);
     }
@@ -1564,7 +1559,6 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
     // Clean up session tracking
     activeSessions.delete(sessionId);
     cancelledSessions.delete(sessionId);
-    console.log(`[ZENDESK AUDIT] Session ${sessionId} cleaned up`);
 
     return {
       success: true,
@@ -1941,7 +1935,6 @@ ipcMain.handle("zendesk-retry-failed-audits", async (_event, loginId, password, 
     // Clean up session tracking
     activeSessions.delete(sessionId);
     cancelledSessions.delete(sessionId);
-    console.log(`[ZENDESK RETRY] Session ${sessionId} cleaned up`);
 
     return {
       success: true,
