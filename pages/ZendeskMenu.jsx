@@ -137,7 +137,7 @@ const ReadyScreen = memo(
         )}
 
         <p style={{ color: '#e67e22', fontWeight: 'bold', marginTop: '10px' }}>
-          Note: After clicking Sign In, you will have 15 seconds to manually enter your two-factor authentication code.
+          Note: After clicking Sign In, you will have approximately 1 minute to manually enter your two-factor authentication code.
         </p>
 
         <h2>Want To See The Login Happen?</h2>
@@ -334,7 +334,7 @@ const ZendeskMenu = () => {
       <h2>{taskType === "scrape" ? "Scraping Zendesk Site..." : "Auditing Zendesk Articles..."}</h2>
       <p>
         The login credentials are being entered. After clicking "Sign in", you will have
-        <strong> up to 20 seconds to manually enter your two-factor authentication code</strong> in
+        <strong> approximately 1 minute to manually enter your two-factor authentication code</strong> in
         the browser window.
       </p>
       {taskType === "scrape" ? (
