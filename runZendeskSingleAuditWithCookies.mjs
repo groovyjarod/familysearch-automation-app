@@ -43,11 +43,7 @@ const LOADING_TIME = parseInt(loadingTime) * 1000;
 const viewport = { width: 1920, height: 1080 };
 const EXPLICIT_PORT = 9222 + (process.pid % 1000);
 
-console.error(`\n[ZENDESK AUDIT] Starting audit with saved cookies`);
-console.error(`[ZENDESK AUDIT] Cookie file: ${cookieFilePath}`);
 console.error(`[ZENDESK AUDIT] Audit URL: ${auditUrl}`);
-console.error(`[ZENDESK AUDIT] Output: ${outputFile}`);
-console.error(`[ZENDESK AUDIT] Port: ${EXPLICIT_PORT}`);
 
 async function main() {
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -65,7 +61,6 @@ async function main() {
   try {
     const cookieData = await fsPromises.readFile(cookieFilePath, 'utf8');
     cookies = JSON.parse(cookieData);
-    console.error(`[ZENDESK AUDIT] Loaded ${cookies.length} cookies from file`);
   } catch (err) {
     console.error(`[ZENDESK AUDIT] Failed to load cookies: ${err.message}`);
     console.log(JSON.stringify({

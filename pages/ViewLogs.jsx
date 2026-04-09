@@ -12,6 +12,7 @@ const ViewLogs = () => {
   const [selectedLogFile, setSelectedLogFile] = useState('')
   const [logFilePath, setLogFilePath] = useState('')
   const logDisplayRef = React.useRef(null)
+  const hasScrolledRef = React.useRef(false)
 
   const loadCurrentLog = async () => {
     try {
@@ -76,6 +77,14 @@ const ViewLogs = () => {
     loadCurrentLog()
   }, [])
 
+  useEffect(() => {
+    // Scroll to bottom once when logs are loaded
+    if (logDisplayRef.current && !hasScrolledRef.current && logContent !== 'Loading logs...') {
+      logDisplayRef.current.scrollTop = logDisplayRef.current.scrollHeight
+      hasScrolledRef.current = true
+    }
+  }, [logContent])
+
   return (
     <VStack {...CenteredVstackCss}>
       <MenuHeader title="Application Logs" subTitle="View console output" headerText={`Log file found at: \n ${logFilePath || "No file found"}`} />
@@ -85,7 +94,7 @@ const ViewLogs = () => {
             ref={logDisplayRef}
             style={{
               width: '100%',
-              height: '350px',
+              height: '320px',
               backgroundColor: '#1e1e1e',
               color: '#d4d4d4',
               fontFamily: 'Consolas, Monaco, "Courier New", monospace',
@@ -118,7 +127,7 @@ const ViewLogs = () => {
               </select>
             </div>
             <button className='btn btn-small' onClick={handleRefresh}>
-              Refresh Logs
+              Refresh
             </button>
             <p style={{ fontSize: '11px', color: '#888' }}>
               Files are rotated weekly and last 5 weeks are kept.
