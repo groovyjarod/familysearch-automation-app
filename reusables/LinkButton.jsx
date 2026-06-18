@@ -4,8 +4,8 @@ import React from 'react'
 
 const LinkButton = ({ destination, buttonText, buttonClass, handleBackButton }) => {
   return (
-    <Link to={destination} onClick={handleBackButton}>
-        <Button className={buttonClass}>{buttonText}</Button>
+    <Link to={destination} onClick={handleBackButton} className={buttonClass}>
+        {buttonText}
     </Link>
   )
 }
