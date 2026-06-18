@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { VStack, HStack } from "@chakra-ui/react";
-import BodyVstackCss from "../reusables/BodyVstackCss";
-import CenteredVstackCss from "../reusables/CenteredVstackCss";
+import AuditListView from "../reusables/AuditListView";
 
 const DisplayZendeskPaths = () => {
   const [files, setFiles] = useState([]);
@@ -32,35 +30,16 @@ const DisplayZendeskPaths = () => {
   }, []);
 
   return (
-    <VStack {...CenteredVstackCss}>
-      <h2>Zendesk Scraped Paths</h2>
-      <HStack width="95%" justifyContent="space-between">
-        <h3>Name</h3>
-        <h3>Total Lines</h3>
-      </HStack>
-      <VStack {...BodyVstackCss}>
-        {files.map((file, index) => {
-          return (
-            <div
-              className="list-item"
-              key={index}
-              onClick={() =>
-                window.electronAPI.openResultsFile(
-                  file.name,
-                  "zendesk-paths"
-                )
-              }
-            >
-              <HStack width="95%" justifyContent="space-between">
-                <p className="scroll-hidden list-name">{file.name}</p>
-                <p>{file.lineCount}</p>
-              </HStack>
-            </div>
-          );
-        })}
-        <div className="page-spacer"></div>
-      </VStack>
-    </VStack>
+    <AuditListView
+      title="Zendesk Scraped Paths"
+      files={files}
+      columnHeaders={["Name", "Total Lines"]}
+      folderName="zendesk-paths"
+      emptyMessage="No paths found in this folder."
+      getColumns={(file) => [
+        { value: file.lineCount }
+      ]}
+    />
   );
 };
 
