@@ -1,11 +1,12 @@
 import React, { useRef, useState, useEffect, memo } from "react";
-import { VStack, HStack, Input } from "@chakra-ui/react";
+import { VStack, HStack, Input, Text } from "@chakra-ui/react";
 import CenteredHstackCss from "../reusables/CenteredHstackCss";
 import CenteredVstackCss from "../reusables/CenteredVstackCss";
 import MenuHeader from "../reusables/MenuHeader";
 import LinkButton from "../reusables/LinkButton";
 import BodyVstackCss from "../reusables/BodyVstackCss";
 import BodyHstackCss from "../reusables/BodyHstackCss";
+import SegmentedControl from "../reusables/SegmentedControl";
 import pLimit from "p-limit";
 import getLastPathSegment from "../reusables/getLastPathSegment";
 import runAllTypesAudit from "../reusables/RunAllTypesAudit";
@@ -59,127 +60,67 @@ const ReadyScreen = memo(
   }) => {
     return (
       <VStack {...BodyVstackCss}>
-        <h2>Paste Full Webpage URL Here:</h2>
+        <h1>Audit One Webpage</h1>
+        <Text>Conduct a single audit on your chosen webpage and watch the audit happen.</Text>
+        <h2>Paste full webpage URL here:</h2>
         <UrlInput fullUrl={fullUrl} setFullUrl={setFullUrl} className="input input-main" />
-        <h2>Choose Testing Method:</h2>
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="testingMethod"
-              value="desktop"
-              checked={testingMethod === "desktop"}
-              onChange={(e) => setTestingMethod(e.target.value)}
-            />
-            <label htmlFor="desktop">Desktop</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="testingMethod"
-              value="mobile"
-              checked={testingMethod === "mobile"}
-              onChange={(e) => setTestingMethod(e.target.value)}
-            />
-            <label htmlFor="mobile">Mobile</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="testingMethod"
-              value="all"
-              checked={testingMethod === "all"}
-              onChange={(e) => {
-                setTestingMethod(e.target.value)
-                setIsViewingAudit("no");
-              }}
-            />
-            <label htmlFor="all">All sizes</label>
-          </HStack>
-        </HStack>
-        <h2>Using User Agent Key?</h2>
-        <p>Grants access to sites that use Inverna blockers. Only use for sites you're authorized to.</p>
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isUsingUserAgent"
-              value="yes"
-              checked={isUsingUserAgent === "yes"}
-              onChange={() => setIsUsingUserAgent("yes")}
-            />
-            <label htmlFor="isUsingUserAgent">Use Key</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isNotUsingUserAgent"
-              value="no"
-              checked={isUsingUserAgent === "no"}
-              onChange={() => setIsUsingUserAgent("no")}
-            />
-            <label htmlFor="isNotUsingUserAgent">Don't Use Key</label>
-          </HStack>
-        </HStack>
-        <h2>Want To See The Audit Happen?</h2>
+        <h2>Which testing method will you use?</h2>
+        <SegmentedControl
+          options={[
+            { label: 'Desktop', value: 'desktop' },
+            { label: 'Mobile', value: 'mobile' },
+            { label: 'All Sizes', value: 'all' }
+          ]}
+          value={testingMethod}
+          onChange={(value) => {
+            setTestingMethod(value);
+            if (value === 'all') {
+              setIsViewingAudit('no');
+            }
+          }}
+          width="100%"
+        />
+        <h2>Will you use a User Agent Key?</h2>
+        <p>This is required for websites that use Inverna blockers. Leave this off if you don't intend to use it for this audit.</p>
+        <SegmentedControl
+          options={[
+            { label: 'Use Key', value: 'yes' },
+            { label: "Don't Use Key", value: 'no' }
+          ]}
+          value={isUsingUserAgent}
+          onChange={setIsUsingUserAgent}
+          width="100%"
+        />
+        <h2>Want to see the Audit happen?</h2>
         <p>Use for debugging purposes to verify that you successfully connected to the page.<br/> If you're conducting an all-sizes audit, you will not be able to view the page.</p>
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              disabled={testingMethod === "all"}
-              type="radio"
-              name="isViewingAudit"
-              value="yes"
-              checked={isViewingAudit === "yes"}
-              onChange={() => setIsViewingAudit(testingMethod === "all" ? "no" : "yes")}
-            />
-            <label htmlFor="isViewingAudit">View Audit</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              disabled={testingMethod === "all"}
-              type="radio"
-              name="isNotViewingAudit"
-              value={false}
-              checked={isViewingAudit === "no"}
-              onChange={() => setIsViewingAudit("no")}
-            />
-            <label htmlFor="isNotViewingAudit">Don't View Audit</label>
-          </HStack>
-        </HStack>
+        <SegmentedControl
+          options={[
+            { label: 'View Audit', value: 'yes', disabled: testingMethod === 'all' },
+            { label: "Don't View Audit", value: 'no' }
+          ]}
+          value={isViewingAudit}
+          onChange={setIsViewingAudit}
+          disabled={testingMethod === 'all'}
+          width="100%"
+        />
       <h2>Timeout for this Test?</h2>
       <p>Determine how many seconds each audit will be allotted to complete. Aim for about 15 to 25 seconds for best results.</p>
       <NumberInput valueVariable={loadingTime} setValueVariable={setLoadingTime} disabled={false} />
       <h2>How detailed would you like your Report?</h2>
       <p>Choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
-      <HStack {...CenteredHstackCss}>
-        <HStack {...BodyHstackCss}>
-          <input
-            type="radio"
-            name="isConcise"
-            value="no"
-            checked={isConcise === "no"}
-            onChange={() => setIsConcise("no")}
-           />
-          <label htmlFor="desktop">Full JSON Report</label>
-        </HStack>
-        <HStack {...BodyHstackCss}>
-          <input
-            type="radio"
-             name="isConcise"
-            value="yes"
-            checked={isConcise === "yes"}
-            onChange={() => setIsConcise("yes")}
-          />
-          <label htmlFor="mobile">Concise JSON Report</label>
-        </HStack>
-      </HStack>
-      <div className="page-spacer"></div>
+      <SegmentedControl
+        options={[
+          { label: 'Full JSON Report', value: 'no' },
+          { label: 'Concise JSON Report', value: 'yes' }
+        ]}
+        value={isConcise}
+        onChange={setIsConcise}
+        width="100%"
+      />
+      <hr />
         <button
           className="btn btn-main"
           onClick={testingMethod === "all" ? handleAllSizesAudit : handleAudit}
-          // onClick={LighthouseTest}
-          // onClick={handleCheck}
           disabled={
             fullUrl.length < 8 ||
             !testingMethod ||
@@ -202,7 +143,7 @@ const AuditOne = () => {
   const [pathName, setPathName] = useState("");
   const [testingMethod, setTestingMethod] = useState("desktop");
   const [userAgent, setUserAgent] = useState("");
-  const [titleHeader, setTitleHeader] = useState("Audit One Webpage");
+  const [titleHeader, setTitleHeader] = useState("Configuration");
   const [isCancelled, setIsCancelled] = useState(false);
   const [isViewingError, setIsViewingError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("");
@@ -421,7 +362,7 @@ const AuditOne = () => {
   }
 
   const handleRunAgain = () => {
-    setTitleHeader("Audit One Webpage")
+    setTitleHeader("Configuration")
     setIsViewingError(false)
     setRunningStatus("ready");
     setFullUrl("");

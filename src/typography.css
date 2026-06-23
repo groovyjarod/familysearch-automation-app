@@ -14,7 +14,7 @@ h1 {
 h2 {
   font-size: 28px;
   color: var(--color-text-primary);
-  margin: 12px 0;
+  margin: 12px 0 0 0;
 }
 
 h3 {
@@ -35,7 +35,6 @@ p {
   font-size: 16px;
   line-height: 1.6;
   color: var(--color-text-primary);
-  margin: 8px 0;
 }
 
 label {

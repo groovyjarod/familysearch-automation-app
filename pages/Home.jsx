@@ -14,6 +14,7 @@ const Home = () => {
         <h1>Lighthouse Automation Tool</h1>
         <h3>Version {version}</h3>
         <h2>Created for FamilySearch</h2>
+        <div className="page-spacer"></div>
         <VStack width="100%" gap="12px">
           <LinkButton
             destination="/test-menu"
@@ -27,7 +28,7 @@ const Home = () => {
           />
           <LinkButton
             destination="/files-menu"
-            buttonText="View/Change Files"
+            buttonText="Configure Audits"
             buttonClass="btn btn-main btn-files"
           />
           <LinkButton

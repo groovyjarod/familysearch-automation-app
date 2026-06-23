@@ -12,16 +12,17 @@ const AuditMenu = () => {
   }, [])
   return (
     <VStack {...CenteredVstackCss}>
-      <MenuHeader title="Conduct an Audit" subTitle={`Version ${version}`} headerText="Choose from the options below which type of audit you would like to conduct." />
+      <MenuHeader title="Conduct an Audit" subTitle={`Version ${version}`} />
       <div className="page-spacer"></div>
-      <h2>Audit Options</h2>
+      <h2>Choose which type of audit process to commence:</h2>
+      <div className="page-spacer"></div>
       <HStack {...CenteredHstackCss}>
-        <LinkButton destination="./test-all" buttonText="Test All" buttonClass="btn btn-menu btn-audit" />
-        <LinkButton destination="./test-single" buttonText="Test One" buttonClass="btn btn-menu btn-audit" />
+        <LinkButton destination="./test-all" buttonText="Audit All Listed Pages" buttonClass="btn btn-menu btn-audit" />
+        <LinkButton destination="./test-single" buttonText="Audit One Webpage" buttonClass="btn btn-menu btn-audit" />
       </HStack>
       <HStack {...CenteredHstackCss}>
-        <LinkButton destination="./zendesk-menu" buttonText="Zendesk Tasks" buttonClass="btn btn-menu btn-audit" />
-        <LinkButton destination="./test-transfer" buttonText="Transfer Audits" buttonClass="btn btn-menu btn-audit" />
+        <LinkButton destination="./zendesk-menu" buttonText="Audit Zendesk Pages" buttonClass="btn btn-menu btn-audit" />
+        <LinkButton destination="./test-transfer" buttonText="Transfer Old Audits" buttonClass="btn btn-menu btn-audit" />
       </HStack>
 
     </VStack>

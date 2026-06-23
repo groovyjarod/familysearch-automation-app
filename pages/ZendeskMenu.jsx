@@ -6,6 +6,7 @@ import MenuHeader from "../reusables/MenuHeader";
 import LinkButton from "../reusables/LinkButton";
 import BodyVstackCss from "../reusables/BodyVstackCss";
 import BodyHstackCss from "../reusables/BodyHstackCss";
+import SegmentedControl from "../reusables/SegmentedControl";
 
 const TextInput = memo(({ label, value, setValue, type = "text", placeholder = "" }) => (
   <>
@@ -61,38 +62,24 @@ const ReadyScreen = memo(
         <h3>Select the task you want to perform</h3>
 
         {/* Task Selection */}
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="taskType"
-              value="scrape"
-              checked={taskType === "scrape"}
-              onChange={() => setTaskType("scrape")}
-            />
-            <label>Scrape Site for Articles</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="taskType"
-              value="audit"
-              checked={taskType === "audit"}
-              onChange={() => setTaskType("audit")}
-            />
-            <label>Audit Zendesk Articles</label>
-          </HStack>
-        </HStack>
+        <SegmentedControl
+          options={[
+            { label: 'Scrape Site for Articles', value: 'scrape' },
+            { label: 'Audit Zendesk Articles', value: 'audit' }
+          ]}
+          value={taskType}
+          onChange={setTaskType}
+          width="100%"
+        />
         <VStack display={ taskType === "audit" ? "inline" : "none" } flexDirection="column">
-          <HStack width="100%" justifyContent="space-between">
-            <h2>Pulling paths from wikiPaths.txt</h2>
-            <LinkButton
-              destination="../../files-menu"
-              buttonText="Edit Wiki Paths"
-              buttonClass="btn btn-small"
-            />
-          </HStack>
+          <h2>Zendesk Auditing</h2>
           <p>Ensure that your initial URL is set to <i><strong>https://articles.familysearch.org/hc/en-us/</strong></i> before beginning. You may edit the initial URL by clicking 'Edit Wiki Paths'.</p>
+          <LinkButton
+            destination="../../files-menu"
+            buttonText="Configure Paths"
+            buttonClass="btn btn-small"
+          />
+          <div className="page-spacer"></div>
         </VStack>
 
         {/* Common Fields */}
@@ -142,28 +129,15 @@ const ReadyScreen = memo(
 
         <h2>Want To See The Login Happen?</h2>
         <p>Use for debugging purposes to verify that login is working correctly.</p>
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isViewingAudit"
-              value="yes"
-              checked={isViewingAudit === "yes"}
-              onChange={() => setIsViewingAudit("yes")}
-            />
-            <label htmlFor="isViewingAudit">View Login</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isNotViewingAudit"
-              value="no"
-              checked={isViewingAudit === "no"}
-              onChange={() => setIsViewingAudit("no")}
-            />
-            <label htmlFor="isNotViewingAudit">Don't View Login</label>
-          </HStack>
-        </HStack>
+        <SegmentedControl
+          options={[
+            { label: 'View Login', value: 'yes' },
+            { label: "Don't View Login", value: 'no' }
+          ]}
+          value={isViewingAudit}
+          onChange={setIsViewingAudit}
+          width="100%"
+        />
 
         <h2>Timeout for Login Process?</h2>
         <p>Determine how many seconds the login process will be allotted to complete. Aim for about 30 seconds.</p>
@@ -203,7 +177,7 @@ const ZendeskMenu = () => {
   const [password, setPassword] = useState("");
   const [zendeskUrl, setZendeskUrl] = useState("https://articles.familysearch.org/hc/en-us");
   const [concurrency, setConcurrency] = useState("3");
-  const [titleHeader, setTitleHeader] = useState("Zendesk Tasks");
+  const [titleHeader, setTitleHeader] = useState("Configuration");
   const [isViewingError, setIsViewingError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isViewingAudit, setIsViewingAudit] = useState('yes');
@@ -319,7 +293,7 @@ const ZendeskMenu = () => {
   };
 
   const handleRunAgain = () => {
-    setTitleHeader("Zendesk Tasks");
+    setTitleHeader("Configuration");
     setIsViewingError(false);
     setRunningStatus("ready");
     setLoginId("");

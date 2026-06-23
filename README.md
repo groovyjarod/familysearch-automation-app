@@ -16,9 +16,9 @@ Each of these JSON files are categorized by the way they were generated into one
 
 The application contains a feature to seamlessly transfer all audits from the Concurrent Audits folder to the Old Audits folder, to allow for customizability.
 
-The application's settings feature is included in the main menu as 'View/Change Files'. Included in this page is the following:
+The application's settings feature is included in the main menu as 'Configure Audits'. Included in this page is the following:
 
-Change Initial URL - this is the base URL that will be used to conduct concurrent audits. All paths within the 'Change Paths' text box will be sequentially used to individually combine with the base URL to conduct concurrent audits.
+Change Base URL - this is the base URL that will be used to conduct concurrent audits. All paths within the 'Change Paths' text box will be sequentially used to individually combine with the base URL to conduct concurrent audits.
 
 Change Paths - this is a list of url paths, relative to the base URL, to conduct concurrent audits.
 

@@ -33,25 +33,25 @@ const SettingsMenu = () => {
 
   return (
     <VStack {...CenteredVstackCss}>
-        <MenuHeader title="Settings" subTitle={`Version ${version}`} />
+        <MenuHeader title="Configuration" subTitle={`Version ${version}`} />
         <LinkButton
           destination="/view-logs"
           buttonText="View Application Logs"
-          buttonClass="btn btn-extension"
+          buttonClass="btn btn-extension btn-files"
         />
         <HStack {...CenteredHstackCss}>
           <VStack {...BodyVstackCss}>
-            <h2>Change Paths</h2>
-            <textarea className='input input-wiki-paths' type="text" value={wikiPaths.join("\n")} onChange={(e) => setWikiPaths(e.target.value.split("\n"))} />
-            <button className='btn btn-small' onClick={() => handleChangeFile(wikiPaths, './settings/wikiPaths.txt', setWikiButtonText)}>{wikiButtonText}</button>
+              <h2>Base URL</h2>
+              <input className='input' type="text" value={initialUrl} onChange={(e) => setInitialUrl(e.target.value)} />
+              <button className='btn btn-small btn-files' onClick={() => handleChangeFile(initialUrl, './settings/initialUrl.txt', setUrlButtonText)}>{urlButtonText}</button>
+              <h2>User Access Key</h2>
+              <input className='input' type="text" value={userKey} onChange={(e) => setUserKey(e.target.value)} />
+              <button className='btn btn-small btn-files' onClick={() => handleChangeFile(userKey, './settings/secretUserAgent.txt', setKeyButtonText)}>{keyButtonText}</button>
           </VStack>
           <VStack {...BodyVstackCss}>
-              <h2>Change Initial URL</h2>
-              <input className='input' type="text" value={initialUrl} onChange={(e) => setInitialUrl(e.target.value)} />
-              <button className='btn btn-small' onClick={() => handleChangeFile(initialUrl, './settings/initialUrl.txt', setUrlButtonText)}>{urlButtonText}</button>
-              <h2>Change Access Key</h2>
-              <input className='input' type="text" value={userKey} onChange={(e) => setUserKey(e.target.value)} />
-              <button className='btn btn-small' onClick={() => handleChangeFile(userKey, './settings/secretUserAgent.txt', setKeyButtonText)}>{keyButtonText}</button>
+            <h2>Page Paths</h2>
+            <textarea className='input input-wiki-paths' type="text" value={wikiPaths.join("\n")} onChange={(e) => setWikiPaths(e.target.value.split("\n"))} />
+            <button className='btn btn-small btn-files' onClick={() => handleChangeFile(wikiPaths, './settings/wikiPaths.txt', setWikiButtonText)}>{wikiButtonText}</button>
           </VStack>
         </HStack>
     </VStack>
