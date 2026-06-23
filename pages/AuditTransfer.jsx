@@ -27,10 +27,11 @@ const AuditTransfer = () => {
 
   return (
     <VStack {...CenteredVstackCss}>
-      <MenuHeader title="Transfer All Current Audits" />
+      <MenuHeader title="Audit Transfer" />
       <VStack {...BodyVstackCss}
         display={pageStatus === "ready" ? "inherit" : "none"}
       >
+        <h1>Transfer All Audits</h1>
         <h3>Move all audits from current audit results folder to old audit results?</h3>
         <h4><strong>This will delete all old audits and move all of your current audits to the Old Audits folder.</strong> Save your work if you need to before continuing.</h4>
         <h4>Please note that even if you have no current audits, clicking this button will still delete all old audits.</h4>

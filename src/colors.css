@@ -1,0 +1,76 @@
+/* FamilySearch Color Palette */
+/* Based on https://www.familysearch.org/en/wiki/Selection_of_Colors_for_FamilySearch.org */
+
+:root {
+  /* Green - Logo/Brand */
+  --fs-green-primary: #87b940;
+  --fs-green-light: #a1cb67;
+  --fs-green-lighter: #c4dea0;
+  --fs-green-lightest: #e8f2d9;
+
+  /* Green Accent */
+  --fs-green-accent: #BFD730;
+  --fs-green-accent-light: #d0e269;
+  --fs-green-accent-lighter: #deeb94;
+  --fs-green-accent-lightest: #f2f7d4;
+
+  /* Blue Accent */
+  --fs-blue-primary: #27c4f4;
+  --fs-blue-light: #6ed7f7;
+  --fs-blue-lighter: #b6ebfb;
+  --fs-blue-lightest: #e7f8fe;
+
+  /* Red Accent */
+  --fs-red-primary: #f16458;
+  --fs-red-light: #f59289;
+  --fs-red-lighter: #f9beb8;
+  --fs-red-lightest: #fde9e7;
+
+  /* Gray Accent/Logo */
+  --fs-gray-primary: #9c947a;
+  --fs-gray-light: #beb9a7;
+  --fs-gray-lighter: #dedcd3;
+  --fs-gray-lightest: #f4f3f0;
+
+  /* Light Gray Logo */
+  --fs-light-gray-primary: #bab7b1;
+  --fs-light-gray-light: #cfcdc9;
+  --fs-light-gray-lighter: #e7e6e4;
+  --fs-light-gray-lightest: #f3f3f1;
+
+  /* Purple Accent */
+  --fs-purple-primary: #996799;
+  --fs-purple-light: #b894b8;
+  --fs-purple-lighter: #d6c2d6;
+  --fs-purple-lightest: #f5f0f5;
+
+  /* Orange Accent */
+  --fs-orange-primary: #fcb34b;
+  --fs-orange-light: #fdca81;
+  --fs-orange-lighter: #fedfb4;
+  --fs-orange-lightest: #fff4e6;
+
+  /* Semantic Colors for UI */
+  --color-background: #ffffff;
+  --color-background-subtle: #f4f3f0;
+  --color-text-primary: #2d2d2d;
+  --color-text-secondary: #666666;
+  --color-border: #dedcd3;
+  --color-border-light: #e7e6e4;
+
+  /* Button Colors - Semantic Mapping */
+  --color-btn-audit: var(--fs-red-primary);
+  --color-btn-audit-hover: #d94d42;
+  --color-btn-view: var(--fs-blue-primary);
+  --color-btn-view-hover: #1fafd8;
+  --color-btn-files: var(--fs-green-primary);
+  --color-btn-files-hover: #6d9a33;
+  --color-btn-secondary: var(--fs-gray-primary);
+  --color-btn-secondary-hover: #857d65;
+
+  /* Input Colors */
+  --color-input-bg: #ffffff;
+  --color-input-border: var(--fs-gray-lighter);
+  --color-input-text: var(--color-text-primary);
+  --color-input-focus-border: var(--fs-blue-primary);
+}

@@ -13,14 +13,14 @@ const MenuHeader = ({ title, subTitle, headerText, handleBackButton }) => {
         >
         <LinkButton
             destination="../"
-            buttonClass="btn"
+            buttonClass="btn-back"
             buttonText="< Go Back"
             handleBackButton={handleBackButton}
         />
         <h1>{title}</h1>
         <h4>{subTitle}</h4>
         </HStack>
-        <Text width="80%">{headerText}</Text>
+        <h4 width="80%">{headerText}</h4>
     </VStack>
   );
 };

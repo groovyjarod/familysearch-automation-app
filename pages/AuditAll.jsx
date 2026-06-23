@@ -7,6 +7,7 @@ import BodyVstackCss from "../reusables/BodyVstackCss";
 import AuditVstackCss from "../reusables/AuditVstackCss";
 import MenuHeader from "../reusables/MenuHeader";
 import LinkButton from "../reusables/LinkButton";
+import SegmentedControl from "../reusables/SegmentedControl";
 import pLimit from "p-limit";
 import runAllTypesAudit from "../reusables/RunAllTypesAudit";
 import getLastPathSegment from "../reusables/getLastPathSegment";
@@ -46,113 +47,64 @@ const ReadyScreen = memo(({
   return (
     <VStack {...BodyVstackCss}>
       <HStack width="100%" justifyContent="space-between">
-        <h2>Pulling paths from wikiPaths.txt</h2>
+        <h1>Audit All Pages</h1>
         <LinkButton
           destination="../../files-menu"
-          buttonText="Edit Wiki Paths"
+          buttonText="Configure Paths"
           buttonClass="btn btn-small"
         />
       </HStack>
-      <p>Ensure that your initial URL is correctly set by clicking 'Edit Wiki Paths'.</p>
       <Text maxW="80%">
-        Based on your computer's available memory, the recommended limit for
-        concurrent tests is:
+        Based on your computer's available memory, it's recommended that you conduct up to <strong>{recommendedAudits} audits.</strong><br />How many tests would you like to run concurrently?
       </Text>
-      <h1>{recommendedAudits}.</h1>
-      <Text>How many tests would you like to run concurrently?</Text>
       <NumberInput valueVariable={testingMethod === 'all' ? 1 : inputNumber} setValueVariable={setInputNumber} disabled={testingMethod === 'all'} />
       <Text maxW="80%" fontStyle='italic'>
         Note: Audits per each url path may fail at a higher rate if this is the first session of running audits.<br/>
         If the result shows that audits failed during the run, it is recommended to first reduce the concurrency number for audits, then increase the concurrency number once audits start passing.
       </Text>
-      <h2>Choose Testing Method</h2>
+      <h2>Which testing method will you use?</h2>
       <p>Choose which format the page will load to accommodate your auditing needs. All Sizes will render 4 instances of the webpage with 4 different width sizes.</p>
-      <HStack {...CenteredHstackCss}>
-        <HStack {...BodyHstackCss}>
-          <input
-            type="radio"
-            name="testingMethod"
-            value="desktop"
-            checked={testingMethod === "desktop"}
-            onChange={(e) => setTestingMethod(e.target.value)}
-          />
-          <label htmlFor="desktop">Desktop</label>
-        </HStack>
-        <HStack {...BodyHstackCss}>
-          <input
-            type="radio"
-            name="testingMethod"
-            value="mobile"
-            checked={testingMethod === "mobile"}
-            onChange={(e) => setTestingMethod(e.target.value)}
-          />
-          <label htmlFor="mobile">Mobile</label>
-        </HStack>
-        <HStack {...BodyHstackCss}>
-          <input
-            type="radio"
-            name="testingMethod"
-            value="all"
-            checked={testingMethod === "all"}
-            onChange={(e) => {
-              setTestingMethod(e.target.value)
-              setInputNumber(1)
-            }}
-          />
-          <label htmlFor="mobile">All Sizes</label>
-        </HStack>
-      </HStack>
-      <h2>Using User Agent Key?</h2>
-        <p>Grants access to sites that use Inverna blockers. Only use for sites you're authorized to.</p>
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isUsingUserAgent"
-              value="yes"
-              checked={isUsingUserAgent === "yes"}
-              onChange={() => setIsUsingUserAgent("yes")}
-            />
-            <label htmlFor="desktop">Use Key</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isUsingUserAgent"
-              value="no"
-              checked={isUsingUserAgent === "no"}
-              onChange={() => setIsUsingUserAgent("no")}
-            />
-            <label htmlFor="mobile">Don't Use Key</label>
-          </HStack>
-        </HStack>
+      <SegmentedControl
+        options={[
+          { label: 'Desktop', value: 'desktop' },
+          { label: 'Mobile', value: 'mobile' },
+          { label: 'All Sizes', value: 'all' }
+        ]}
+        value={testingMethod}
+        onChange={(value) => {
+          setTestingMethod(value);
+          if (value === 'all') {
+            setInputNumber(1);
+          }
+        }}
+        width="100%"
+      />
+      <h2>Will you use a User Agent Key?</h2>
+        <p>This is required for websites that use Inverna blockers. Leave this off if you don't intend to use it for this series of audits.</p>
+        <SegmentedControl
+          options={[
+            { label: 'Use Key', value: 'yes' },
+            { label: "Don't Use Key", value: 'no' }
+          ]}
+          value={isUsingUserAgent}
+          onChange={setIsUsingUserAgent}
+          width="100%"
+        />
         <h2>Timeout for Tests?</h2>
       <p>Determine how many seconds each audit will be allotted to complete. Aim for about 15 to 25 seconds for best results.</p>
       <NumberInput valueVariable={loadingTime} setValueVariable={setLoadingTime} disabled={false} />
         <h2>How detailed would you like your Report?</h2>
         <p>Choose between a detailed JSON report that shows coordinates for every instance of an issue, or a consolidated report that just shows the overall problems.</p>
-        <HStack {...CenteredHstackCss}>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isConcise"
-              value="no"
-              checked={isConcise === "no"}
-              onChange={() => setIsConcise("no")}
-            />
-            <label htmlFor="desktop">Full JSON Report</label>
-          </HStack>
-          <HStack {...BodyHstackCss}>
-            <input
-              type="radio"
-              name="isConcise"
-              value="yes"
-              checked={isConcise === "yes"}
-              onChange={() => setIsConcise("yes")}
-            />
-            <label htmlFor="mobile">Concise JSON Report</label>
-          </HStack>
-        </HStack>
+        <SegmentedControl
+          options={[
+            { label: 'Full JSON Report', value: 'no' },
+            { label: 'Concise JSON Report', value: 'yes' }
+          ]}
+          value={isConcise}
+          onChange={setIsConcise}
+          width="100%"
+        />
+        <hr />
       <button
         className="btn btn-main"
         onClick={() => commenceAllAudits(wikiPaths)}
@@ -220,7 +172,6 @@ const AuditAll = () => {
           if (!isCancelledRef.current) {
             setRunningStatus("warning");
           } else {
-            console.log('Retry skipped due to cancellation.');
             setRunningStatus("cancelled")
             throw new Error("Audit cancelled by user.");
           }
@@ -475,9 +426,21 @@ const AuditAll = () => {
     </VStack>
   );
 
+  const getHeaderTitle = () => {
+    switch (runningStatus) {
+      case "ready": return "Configure Audit";
+      case "running": return "Running Audits";
+      case "warning": return "Retrying Audit";
+      case "finished": return "Audits Complete";
+      case "cancelled": return "Audits Cancelled";
+      case "error": return "Audit Error";
+      default: return "Audit All Pages";
+    }
+  };
+
   return (
     <VStack {...CenteredVstackCss}>
-      <MenuHeader title="Audit All Pages" handleBackButton={handleCancelAudit} />
+      <MenuHeader title={getHeaderTitle()} handleBackButton={handleCancelAudit} />
       {runningStatus === "ready" && (
         <ReadyScreen
           inputNumber={inputNumber}

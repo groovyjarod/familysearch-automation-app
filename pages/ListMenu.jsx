@@ -15,6 +15,7 @@ const ListMenu = () => {
         <MenuHeader title="View Audit Folders" subTitle={`Version ${version}`} />
         <div className="page-spacer"></div>
         <h2>Choose a folder to view your Audits:</h2>
+        <div className="page-spacer"></div>
         <HStack {...CenteredHstackCss}>
             <LinkButton destination="./view-audits" buttonText="Listed Audits" buttonClass="btn btn-menu btn-view" />
             <LinkButton destination="./view-old-audits" buttonText="Old Audits" buttonClass="btn btn-menu btn-view" />
