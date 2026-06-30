@@ -1,6 +1,6 @@
 {
   "name": "FamilySearch-Automation-App",
-  "version": "1.12.5",
+  "version": "1.12.6",
   "description": "FamilySearch Auditing Automation Application",
   "main": "main.js",
   "author": "SolutionStream",
@@ -147,7 +147,14 @@
       "entitlements": "entitlements.mac.plist"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
