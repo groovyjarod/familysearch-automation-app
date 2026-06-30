@@ -1,6 +1,6 @@
 {
   "name": "FamilySearch-Automation-App",
-  "version": "1.12.2",
+  "version": "1.12.3",
   "description": "FamilySearch Auditing Automation Application",
   "main": "main.js",
   "author": "SolutionStream",
@@ -100,6 +100,8 @@
       "!**/.DS_Store",
       "build/**/*",
       "main.js",
+      "lib/**/*",
+      "ipcHandlers/**/*",
       "reusables/**/*",
       "src/**/*",
       "preload.js",
