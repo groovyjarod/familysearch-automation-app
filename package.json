@@ -1,7 +1,7 @@
 {
   "name": "FamilySearch-Automation-App",
-  "version": "1.12.1",
-  "description": "A react-based automation tool using Electron to emulate, React to render, and javascript to process logic.",
+  "version": "1.12.2",
+  "description": "FamilySearch Auditing Automation Application",
   "main": "main.js",
   "author": "SolutionStream",
   "license": "MIT",
