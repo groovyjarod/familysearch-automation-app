@@ -1,6 +1,6 @@
 {
   "name": "FamilySearch-Automation-App",
-  "version": "1.12.4",
+  "version": "1.12.5",
   "description": "FamilySearch Auditing Automation Application",
   "main": "main.js",
   "author": "SolutionStream",
@@ -148,13 +148,22 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "publisherName": "SolutionStream"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "deleteAppDataOnUninstall": true
+      "allowElevation": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "FamilySearch Automation App",
+      "deleteAppDataOnUninstall": true,
+      "runAfterFinish": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
     },
     "publish": [
       {
