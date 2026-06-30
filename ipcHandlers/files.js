@@ -3,10 +3,6 @@ const fs = require("fs");
 const fsPromise = require("fs").promises;
 const path = require("path");
 
-/**
- * Register file-related IPC handlers
- * Includes: reading, writing, and managing individual files
- */
 function registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir) {
   ipcMain.handle("get-wiki-paths", async () => {
     const basePath = isDev
@@ -18,9 +14,14 @@ function registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir) 
   });
 
   ipcMain.handle("get-file", async (event, filePath) => {
+
+    const normalizedPath = isDev
+      ? filePath
+      : filePath.replace(/^\.?\/?(settings\/)?/, '');
+
     const basePath = isDev
-      ? path.join(process.cwd(), filePath)
-      : path.join(getSettingsPath(), filePath);
+      ? path.join(process.cwd(), normalizedPath)
+      : path.join(getSettingsPath(), normalizedPath);
     return await fsPromise.readFile(basePath, "utf8");
   });
 
@@ -159,6 +160,4 @@ function registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir) 
   });
 }
 
-module.exports = {
-  registerFileHandlers
-};
+module.exports = { registerFileHandlers }
