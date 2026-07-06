@@ -90,20 +90,24 @@ export default function generateFinalResultMessage (rawData) {
     return (
         <>
         <h2>{scoreMessage}</h2>
-        <p>You have {Object.keys(data).length - 2} items to attend to with this page. Let's break this down:</p>
-        <br />
-        {rawJSONItemNames.map((itemName, index) => (
+        {data.accessibilityScore < 100 ? (
             <>
-            <h3>Your {ordinal(index)} item concerns {items[index]}:</h3>
-            <p>{data[itemName].title}.</p>
-            <p>{trimDescription(data[itemName].description)}</p>
-            <p><strong>The solution:</strong> {formatExplanation(data[itemName].items[0].explanation)}</p>
-            <RenderItemList itemObject={data[itemName].items} />
-            <br />
+                <p>You have {Object.keys(data).length - 2} items to attend to with this page. Let's break this down:</p>
+                <br />
+                {rawJSONItemNames.map((itemName, index) => (
+                    <>
+                    <h3>Your {ordinal(index)} item concerns {items[index]}:</h3>
+                    <p>{data[itemName].title}.</p>
+                    <p>{trimDescription(data[itemName].description)}</p>
+                    <p><strong>The solution:</strong> {formatExplanation(data[itemName].items[0].explanation)}</p>
+                    <RenderItemList itemObject={data[itemName].items} />
+                    <br />
+                    </>
+                ))}
+                <h3>That's all the issues for now.</h3>
+                <button className="btn btn-main" onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth'})}>Back To Top ▲</button>
             </>
-        ))}
-        <h3>That's all the issues for now.</h3>
-        <button className="btn btn-main" onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth'})}>Back To Top ▲</button>
+        ) : (<><p>Your test produced a perfect score of 100, indicating there are no problems with this page.</p></>)}
         <div className="page-spacer"></div>
         </>
     )
