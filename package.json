@@ -1,7 +1,7 @@
 {
   "name": "FamilySearch-Automation-App",
-  "version": "1.12.10",
-  "description": "FamilySearch Auditing Automation Application",
+  "version": "1.12.11",
+  "description": "FamilySearch Audit Automation Application",
   "main": "main.js",
   "author": "SolutionStream",
   "license": "MIT",
