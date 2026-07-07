@@ -31,8 +31,6 @@ const { registerZendeskHandlers } = require("./ipcHandlers/zendesk");
 // ------------ App Lifecycle ------------
 
 app.on('before-quit', () => {
-  // Kill all active child processes before quitting (important for Windows updates)
-  killAllProcesses();
   closeLogging();
 });
 
