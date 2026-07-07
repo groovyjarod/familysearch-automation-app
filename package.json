@@ -1,6 +1,6 @@
 {
   "name": "FamilySearch-Automation-App",
-  "version": "1.12.9",
+  "version": "1.12.10",
   "description": "FamilySearch Auditing Automation Application",
   "main": "main.js",
   "author": "SolutionStream",
@@ -171,7 +171,7 @@
       "installerIcon": "icon.ico",
       "uninstallerIcon": "icon.ico",
       "warningsAsErrors": false,
-      "include": "build/installer.nsh"
+      "include": "installer.nsh"
     },
     "publish": [
       {
