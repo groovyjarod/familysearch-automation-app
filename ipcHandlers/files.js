@@ -4,27 +4,6 @@ const fsPromise = require("fs").promises;
 const path = require("path");
 
 function registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir) {
-  ipcMain.handle("get-wiki-paths", async () => {
-    const basePath = isDev
-      ? path.join(getSettingsPath(), 'wikiPaths.txt')
-      : path.join(getSettingsPath(), 'wikiPaths.txt');
-    const resultsRaw = await fsPromise.readFile(basePath, "utf8");
-    const result = resultsRaw.split("\n").filter(Boolean);
-    return result;
-  });
-
-  ipcMain.handle("get-file", async (event, filePath) => {
-
-    const normalizedPath = isDev
-      ? filePath
-      : filePath.replace(/^\.?\/?(settings\/)?/, '');
-
-    const basePath = isDev
-      ? path.join(process.cwd(), normalizedPath)
-      : path.join(getSettingsPath(), normalizedPath);
-    return await fsPromise.readFile(basePath, "utf8");
-  });
-
   ipcMain.handle("get-all-sized-audit", async (event, filePath) => {
     const basePath = isDev
       ? path.join(process.cwd(), "audits", filePath)
@@ -139,25 +118,6 @@ function registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir) 
     }
   });
 
-  ipcMain.handle("replace-file", async (event, newData, newPath) => {
-    try {
-      const basePath = isDev
-        ? path.join(process.cwd(), newPath)
-        : path.join(getSettingsPath(), newPath);
-
-      if (typeof newData === "object") {
-        const parsedNewData = newData.join("\n");
-        fs.writeFileSync(basePath, parsedNewData, "utf8");
-        return { success: true, info: newData };
-      } else {
-        fs.writeFileSync(basePath, newData, "utf8");
-        return { success: true, info: newData };
-      }
-    } catch (err) {
-      console.error('Replace File failed:', err);
-      return { success: false, error: err };
-    }
-  });
 }
 
 module.exports = { registerFileHandlers }

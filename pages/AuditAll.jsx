@@ -11,6 +11,7 @@ import SegmentedControl from "../reusables/SegmentedControl";
 import pLimit from "p-limit";
 import runAllTypesAudit from "../reusables/RunAllTypesAudit";
 import getLastPathSegment from "../reusables/getLastPathSegment";
+import { useSettings } from "../contexts/SettingsContext";
 
 const NumberInput = memo(({ valueVariable, setValueVariable, disabled }) => {
 
@@ -126,10 +127,9 @@ const ReadyScreen = memo(({
 });
 
 const AuditAll = () => {
+  const { settings, loading: settingsLoading } = useSettings();
   const [recommendedAudits, setRecommendedAudits] = useState(0);
-  const [userAgent, setUserAgent] = useState("");
-  const [initialUrl, setInitialUrl] = useState("");
-  const [wikiPaths, setWikiPaths] = useState([]);
+  const [activeWikiPaths, setActiveWikiPaths] = useState([]);
   const [inputNumber, setInputNumber] = useState(0);
   const [testingMethod, setTestingMethod] = useState("desktop");
   const [runningStatus, setRunningStatus] = useState("ready");
@@ -145,10 +145,14 @@ const AuditAll = () => {
 
   useEffect(() => {
     window.electronAPI.accessOsData().then(setRecommendedAudits).catch(console.error);
-    window.electronAPI.getWikiPathsData().then(setWikiPaths).catch(console.error);
-    window.electronAPI.getFile('./settings/secretUserAgent.txt').then(setUserAgent).catch(console.error);
-    window.electronAPI.getFile('./settings/initialUrl.txt').then(setInitialUrl).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!settingsLoading) {
+      setActiveWikiPaths(settings.wikiPaths);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoading]);
 
   useEffect(() => {
     isCancelledRef.current = isCancelled
@@ -199,10 +203,10 @@ const AuditAll = () => {
     const numberOfConcurrentAudits = pLimit(1)
     setRunningStatus("running")
     setIsCancelled(false)
-    const pathsToUse = failedAudits.length > 0 ? failedAudits : wikiPaths
+    const pathsToUse = failedAudits.length > 0 ? failedAudits : activeWikiPaths
     setFailedAudits([])
     const tasks = pathsToUse.map((wikiPath) => {
-      const fullUrl = `${initialUrl}${wikiPath}`
+      const fullUrl = `${settings.initialUrl}${wikiPath}`
       window.scrollTo({ top: 0, left: 0, behavior: 'smooth'})
       return numberOfConcurrentAudits(async () => {
         if (isCancelledRef.current) {
@@ -213,7 +217,7 @@ const AuditAll = () => {
           addItem(fullUrl)
           const result = await runAllTypesAudit(
             fullUrl,
-            userAgent,
+            settings.secretUserAgent,
             pLimit,
             getLastPathSegment,
             'audit-results',
@@ -251,7 +255,7 @@ const AuditAll = () => {
     setFailedAudits([])
     const tasks = pathList.map((wikiPath, index) => {
       const conciseTag = isConcise === "yes" ? "concise" : "full"
-      const fullUrl = `${initialUrl}${wikiPath}`;
+      const fullUrl = `${settings.initialUrl}${wikiPath}`;
       const outputDirPath = 'audit-results'
       const cleanPathName = getLastPathSegment(wikiPath) || `path-${index + 1}`;
       const outputFilePath = `${index + 1}-${testingMethod}-${conciseTag}-${cleanPathName}.json`;
@@ -271,7 +275,7 @@ const AuditAll = () => {
               outputDirPath,
               outputFilePath,
               testingMethod,
-              userAgent,
+              settings.secretUserAgent,
               testingMethod === 'desktop' ? 1920 : 500,
               processId,
               isUsingUserAgent,
@@ -319,7 +323,7 @@ const AuditAll = () => {
     setSuccessfulAudits([])
     setFailedAudits([])
     setRunningStatus("ready")
-    window.electronAPI.getWikiPathsData().then(setWikiPaths).catch(console.error);
+    setActiveWikiPaths(settings.wikiPaths)
   }
 
   const handleUpdateConcurrency = () => {
@@ -327,7 +331,7 @@ const AuditAll = () => {
     setFailedAudits(() => [])
     const newAudits = []
     for (const audit of failedAudits) newAudits.push(getLastPathSegment(audit))
-    setWikiPaths(newAudits)
+    setActiveWikiPaths(newAudits)
     setRunningStatus("ready")
   }
 
@@ -455,7 +459,7 @@ const AuditAll = () => {
           loadingTime={loadingTime}
           setLoadingTime={setLoadingTime}
           commenceAllAudits={testingMethod === 'all' ? (pathList) => commenceEachAllTypeAudit(pathList) : (pathList) => commenceAllAudits(pathList)}
-          wikiPaths={wikiPaths}
+          wikiPaths={activeWikiPaths}
         />
       )}
       {runningStatus === "running" && <RunningScreen />}

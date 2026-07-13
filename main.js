@@ -6,6 +6,7 @@ const path = require("path");
 const { initializeLogging, closeLogging, getLogFilePath } = require("./lib/logging");
 const { setupAutoUpdater, checkForUpdates } = require("./lib/updater");
 const { ensureDir, initializeSettings } = require("./lib/initialization");
+const { getSettings, saveSettings, migrateLegacySettingsIfNeeded } = require("./lib/settingsStore");
 const { nodeBinary, chromiumPath, isPackaged, isDev, getAuditsPath, getSettingsPath, getResourcesPath } = require("./lib/paths");
 const { createWindow, setupAppLifecycle } = require("./lib/window");
 const {
@@ -25,6 +26,7 @@ const {
 const { registerSystemHandlers } = require("./ipcHandlers/system");
 const { registerFolderHandlers } = require("./ipcHandlers/folders");
 const { registerFileHandlers } = require("./ipcHandlers/files");
+const { registerSettingsHandlers } = require("./ipcHandlers/settings");
 const { registerAuditHandlers } = require("./ipcHandlers/audit");
 const { registerZendeskHandlers } = require("./ipcHandlers/zendesk");
 
@@ -50,6 +52,7 @@ const createWindowWrapper = () => {
     initializeLogging,
     ensureDir,
     initializeSettings,
+    migrateLegacySettingsIfNeeded,
     isPackaged,
     isDev,
     getAuditsPath,
@@ -64,6 +67,7 @@ setupAppLifecycle(createWindowWrapper, checkForUpdates);
 registerSystemHandlers(nodeBinary);
 registerFolderHandlers(isDev, getAuditsPath);
 registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir);
+registerSettingsHandlers(getSettings, saveSettings);
 registerAuditHandlers(
   isDev,
   getAuditsPath,
@@ -88,7 +92,8 @@ registerZendeskHandlers(
   startSession,
   isSessionCancelled,
   endSession,
-  ensureDir
+  ensureDir,
+  getSettings
 );
 
 // ------------ Log Viewing IPC Handlers ------------

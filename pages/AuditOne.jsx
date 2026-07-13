@@ -12,6 +12,7 @@ import getLastPathSegment from "../reusables/getLastPathSegment";
 import runAllTypesAudit from "../reusables/RunAllTypesAudit";
 import handleAuditResult from "../reusables/HandleAuditResult";
 import generateFinalResultMessage from "../reusables/generateFinalResultMessage";
+import { useSettings } from "../contexts/SettingsContext";
 
 const UrlInput = memo(({ fullUrl, setFullUrl, className }) => (
   <Input
@@ -138,11 +139,11 @@ const ReadyScreen = memo(
 );
 
 const AuditOne = () => {
+  const { settings } = useSettings();
   const [runningStatus, setRunningStatus] = useState("ready");
   const [fullUrl, setFullUrl] = useState("");
   const [pathName, setPathName] = useState("");
   const [testingMethod, setTestingMethod] = useState("desktop");
-  const [userAgent, setUserAgent] = useState("");
   const [titleHeader, setTitleHeader] = useState("Configuration");
   const [isCancelled, setIsCancelled] = useState(false);
   const [isViewingError, setIsViewingError] = useState(false)
@@ -153,13 +154,6 @@ const AuditOne = () => {
   const [loadingTime, setLoadingTime] = useState("15")
   const [resultContents, setResultContents] = useState("")
   const isCancelledRef = useRef(isCancelled)
-
-  useEffect(() => {
-    window.electronAPI
-      .getFile("./settings/secretUserAgent.txt")
-      .then(setUserAgent)
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     isCancelledRef.current = isCancelled
@@ -219,7 +213,7 @@ const AuditOne = () => {
       await retryAudit(async () => {
         const result = await runAllTypesAudit(
           fullUrl,
-          userAgent,
+          settings.secretUserAgent,
           pLimit,
           getLastPathSegment,
           'custom-audit-results',
@@ -289,7 +283,7 @@ const AuditOne = () => {
           outputDirPath,
           outputFilePath,
           testingMethod,
-          userAgent,
+          settings.secretUserAgent,
           testingMethod === "desktop" ? 1920 : 500,
           processId,
           isUsingUserAgent,

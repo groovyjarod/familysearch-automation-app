@@ -15,7 +15,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getCurrentFile: () => ipcRenderer.invoke("get-current-filename"),
   getCustomAudits: () => ipcRenderer.invoke("read-custom-audits"),
   getEditableFiles: () => ipcRenderer.invoke("read-options-folder"),
-  getFile: (filename) => ipcRenderer.invoke("get-file", filename),
   getPLimit: () => ipcRenderer.invoke("get-p-limit"),
   getSpawn: (
     urlPath,
@@ -45,14 +44,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
       isConcise
     ),
     getVersion: () => ipcRenderer.invoke("get-version"),
-    getWikiPathsData: () => ipcRenderer.invoke("get-wiki-paths"),
   getOldAudits: () => ipcRenderer.invoke("read-old-audit-folder"),
   openChromeUrl: (url) => ipcRenderer.invoke("open-chrome", url),
   moveAuditFiles: (fromFolderName, toFolderName) => ipcRenderer.invoke("move-audit-files", fromFolderName, toFolderName),
   openResultsFile: (filename, folder) =>
     ipcRenderer.invoke("open-results-file", filename, folder),
-  replaceFile: (newData, newPath, isWikiPaths = false) =>
-    ipcRenderer.invoke("replace-file", newData, newPath, isWikiPaths),
+  getSettings: () => ipcRenderer.invoke("get-settings"),
+  saveSettings: (partial) => ipcRenderer.invoke("save-settings", partial),
   saveFile: (filePath, fileContent) =>
     ipcRenderer.invoke("save-file", filePath, fileContent),
   onLighthouseLog: (callback) =>
