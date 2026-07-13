@@ -18,7 +18,8 @@ function registerZendeskHandlers(
   startSession,
   isSessionCancelled,
   endSession,
-  ensureDir
+  ensureDir,
+  getSettings
 ) {
 ipcMain.handle("zendesk-login", async (_event, loginId, password, isViewingAudit, loadingTime) => {
   let output = "";
@@ -248,40 +249,33 @@ ipcMain.handle("zendesk-concurrent-audit", async (_event, loginId, password, zen
     ? path.join(process.cwd(), "runZendeskSingleAuditWithCookies.mjs")
     : path.join(getResourcesPath(), "runZendeskSingleAuditWithCookies.mjs");
 
-  // Read wikiPaths.txt to get URLs to audit
-  const settingsDir = isDev
-    ? path.join(process.cwd(), 'settings')
-    : path.join(getAuditsPath(), 'settings');
-
-  const wikiPathsFile = path.join(settingsDir, 'wikiPaths.txt');
-
+  // Read wikiPaths from settings to get URLs to audit
   let urlsToAudit = [];
   try {
-    const pathsContent = await fsPromise.readFile(wikiPathsFile, 'utf8');
-    const paths = pathsContent.split('\n').filter(p => p.trim());
+    const { wikiPaths } = await getSettings();
 
     // Build full URLs from paths
     const baseUrl = zendeskUrl.endsWith('/') ? zendeskUrl.slice(0, -1) : zendeskUrl;
-    urlsToAudit = paths.map(p => {
+    urlsToAudit = wikiPaths.map(p => {
       const cleanPath = p.startsWith('/') ? p : '/' + p;
       return baseUrl + cleanPath;
     });
   } catch (err) {
-    console.error('[ZENDESK AUDIT] Failed to read wikiPaths.txt:', err.message);
+    console.error('[ZENDESK AUDIT] Failed to read settings:', err.message);
     return {
       success: false,
-      error: `Failed to read wikiPaths.txt: ${err.message}`,
+      error: `Failed to read settings: ${err.message}`,
       friendlyMessage: 'Could not find paths to audit',
-      suggestion: 'Make sure wikiPaths.txt exists in the settings folder'
+      suggestion: 'Check the settings page and re-save your wiki paths'
     };
   }
 
   if (urlsToAudit.length === 0) {
     return {
       success: false,
-      error: 'No URLs found in wikiPaths.txt',
+      error: 'No URLs found in wikiPaths setting',
       friendlyMessage: 'No paths to audit',
-      suggestion: 'Add paths to wikiPaths.txt in the settings'
+      suggestion: 'Add paths to Page Paths in the settings page'
     };
   }
 
