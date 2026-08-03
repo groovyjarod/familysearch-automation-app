@@ -68,6 +68,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getZendeskAuditResults: () => ipcRenderer.invoke("read-zendesk-audit-results"),
   getZendeskPathLineCount: (filename) => ipcRenderer.invoke("get-zendesk-path-line-count", filename),
   checkNode: () => ipcRenderer.invoke("check-node"),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   // Logging functionality
   getLogFilePath: () => ipcRenderer.invoke("get-log-file-path"),
   readLogFile: () => ipcRenderer.invoke("read-log-file"),
