@@ -9,7 +9,7 @@ const pLimit = require("p-limit");
  * Register system-related IPC handlers
  * Includes: version info, OS data, node binary check, external URL opening
  */
-function registerSystemHandlers(nodeBinary) {
+function registerSystemHandlers(nodeBinary, checkForUpdatesManual) {
   ipcMain.handle('check-node', async () => {
     const testNodePath = path.join(process.resourcesPath, os.platform() === 'win32' ? 'node.exe' : 'node');
 
@@ -57,6 +57,8 @@ function registerSystemHandlers(nodeBinary) {
   });
 
   ipcMain.handle("get-p-limit", async () => pLimit);
+
+  ipcMain.handle("check-for-updates", async () => checkForUpdatesManual());
 }
 
 module.exports = {

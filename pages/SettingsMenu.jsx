@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { VStack, HStack, Menu } from '@chakra-ui/react'
+import { VStack, HStack, Menu, Spinner } from '@chakra-ui/react'
 import CenteredHstackCss from '../reusables/CenteredHstackCss'
 import CenteredVstackCss from '../reusables/CenteredVstackCss'
 import MenuHeader from '../reusables/MenuHeader'
@@ -18,6 +18,8 @@ const SettingsMenu = () => {
   const [wikiButtonText, setWikiButtonText] = useState('Save Changes')
   const [urlButtonText, setUrlButtonText] = useState('Save Changes')
   const [keyButtonText, setKeyButtonText] = useState('Save Changes')
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+  const [updateStatusMessage, setUpdateStatusMessage] = useState('')
 
   const handleSave = async (key, value, setButtonText) => {
     const result = await updateSettings({ [key]: value })
@@ -25,6 +27,23 @@ const SettingsMenu = () => {
     setTimeout(() => {
       setButtonText('Save Changes')
     }, result.success ? 500 : 2000);
+  }
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true)
+    setUpdateStatusMessage('')
+
+    const result = await window.electronAPI.checkForUpdates()
+
+    if (result.status === 'available') {
+      setUpdateStatusMessage(`Update available! Version ${result.version} is downloading and will prompt you to install once ready.`)
+    } else if (result.status === 'not-available') {
+      setUpdateStatusMessage("You're on the latest version.")
+    } else {
+      setUpdateStatusMessage(`Couldn't check for updates: ${result.message}`)
+    }
+
+    setIsCheckingUpdate(false)
   }
 
   useEffect(() => {
@@ -43,11 +62,22 @@ const SettingsMenu = () => {
   return (
     <VStack {...CenteredVstackCss}>
         <MenuHeader title="Configuration" subTitle={`Version ${version}`} />
-        <LinkButton
-          destination="/view-logs"
-          buttonText="View Application Logs"
-          buttonClass="btn btn-extension btn-files"
-        />
+        <HStack {...CenteredHstackCss}>
+          <LinkButton
+            destination="/view-logs"
+            buttonText="View Application Logs"
+            buttonClass="btn btn-extension btn-files"
+          />
+          <button
+            className='btn btn-extension btn-files'
+            onClick={handleCheckForUpdates}
+            disabled={isCheckingUpdate}
+          >
+            {isCheckingUpdate && <Spinner size="sm" marginRight="8px" />}
+            {isCheckingUpdate ? 'Checking...' : 'Check For Updates'}
+          </button>
+        </HStack>
+        {updateStatusMessage && <p>{updateStatusMessage}</p>}
         <HStack {...CenteredHstackCss}>
           <VStack {...BodyVstackCss}>
               <h2>Base URL</h2>

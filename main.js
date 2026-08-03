@@ -4,7 +4,7 @@ const path = require("path");
 
 // ------------ Module Imports ------------
 const { initializeLogging, closeLogging, getLogFilePath } = require("./lib/logging");
-const { setupAutoUpdater, checkForUpdates } = require("./lib/updater");
+const { setupAutoUpdater, checkForUpdatesManual } = require("./lib/updater");
 const { ensureDir, initializeSettings } = require("./lib/initialization");
 const { getSettings, saveSettings, migrateLegacySettingsIfNeeded } = require("./lib/settingsStore");
 const { nodeBinary, chromiumPath, isPackaged, isDev, getAuditsPath, getSettingsPath, getResourcesPath } = require("./lib/paths");
@@ -55,16 +55,15 @@ const createWindowWrapper = () => {
     migrateLegacySettingsIfNeeded,
     isPackaged,
     isDev,
-    getAuditsPath,
-    checkForUpdates
+    getAuditsPath
   );
 };
 
 // Setup app lifecycle handlers
-setupAppLifecycle(createWindowWrapper, checkForUpdates);
+setupAppLifecycle(createWindowWrapper);
 
 // Register IPC handlers
-registerSystemHandlers(nodeBinary);
+registerSystemHandlers(nodeBinary, checkForUpdatesManual);
 registerFolderHandlers(isDev, getAuditsPath);
 registerFileHandlers(isDev, getAuditsPath, getSettingsPath, ensureDir);
 registerSettingsHandlers(getSettings, saveSettings);
