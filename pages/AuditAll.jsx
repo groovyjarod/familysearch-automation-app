@@ -286,11 +286,13 @@ const AuditAll = () => {
             if (typeof result === "object" && result.accessibilityScore > 0) {
               console.log(`✓ Test passed for URL: ${fullUrl}`);
               setSuccessfulAudits((prev) => [...prev, fullUrl])
+              setFailedAudits((prev) => prev.filter((url) => url !== fullUrl))
               return
             } else if (typeof result === "object" && Object.values(result).every(r => r && r.accessibilityScore > 0)) {
               // For "all sizes" audits that return multiple results
               console.log(`✓ Test passed for URL: ${fullUrl}`);
               setSuccessfulAudits((prev) => [...prev, fullUrl])
+              setFailedAudits((prev) => prev.filter((url) => url !== fullUrl))
               return
             } else {
               const score = result?.accessibilityScore ?? 'unknown';
@@ -302,7 +304,7 @@ const AuditAll = () => {
               console.log('Cancellation caught in commenceAllAudits.')
             } else {
               console.error(`Audit for ${fullUrl} failed:`, err);
-              setFailedAudits((prev) => [...prev, fullUrl])
+              setFailedAudits((prev) => prev.includes(fullUrl) ? prev : [...prev, fullUrl])
             }
             throw err;
           } finally {
@@ -312,7 +314,12 @@ const AuditAll = () => {
       );
     });
 
-    await Promise.all(tasks);
+    const results = await Promise.allSettled(tasks);
+    results.forEach((r) => {
+      if (r.status === "rejected" && r.reason?.message !== "Audit cancelled by user.") {
+        console.error("Unhandled audit task rejection in commenceAllAudits:", r.reason);
+      }
+    });
     if (!isCancelledRef.current) {
       console.log("AuditAll.jsx: All Audits complete!");
       setRunningStatus("finished");
